@@ -29,7 +29,7 @@ batch_cell_numbers <- matrix(nrow = length(batchNames_list), ncol = 3)
 for (i in 1:length(batchNames_list)){
   
   batch <- batchNames_list[i]
-  data <- Read10X(data.dir = paste0("../../../",batch,"_output/outs/filtered_feature_bc_matrix"))
+  data <- Read10X(data.dir = paste0("INPUTS/",batch,"_output/outs/filtered_feature_bc_matrix"))
   
   batch_cell_numbers[i,] <- c(batch, dim(data)[1], dim(data)[2]) #Create a table with num_genes and num_cells for each capture
   
@@ -44,25 +44,17 @@ write.table(batch_cell_numbers, "number_cells_per_batch.txt", quote = FALSE)
 batchList <- batchNames_list
 batchObjectList <- list(capture1, capture2, capture3, capture4, capture5, capture6, capture7, capture8, capture9, capture10, capture11, capture12, capture13, capture14)
 
-saveRDS(batchList, file="batchList.rds")
-saveRDS(batchObjectList, file="batchObjectList.rds")
+saveRDS(batchList, file="OUTPUTS/batchList.rds")
+saveRDS(batchObjectList, file="OUTPUTS/batchObjectList.rds")
 
-
-##STOP POINT
-
-
-batchList <- readRDS("batchList.rds")
-batchObjectList <- readRDS("batchObjectList.rds")
-
-
-#Read in demuxlet data (demuxlet best files were converted to csv in excel and barcodes were edited to exlude "-1" at the end)
+###### Read in demuxlet data (demuxlet best files were converted to csv in excel and barcodes were edited to exlude "-1" at the end)
 
 demuxlet_out_list <- c("capture1_demuxlet", "capture2_demuxlet", "capture3_demuxlet", "capture4_demuxlet", "capture5_demuxlet", "capture6_demuxlet", "capture7_demuxlet", "capture8_demuxlet", "capture9_demuxlet", "capture10_demuxlet", "capture11_demuxlet", "capture12_demuxlet", "capture13_demuxlet", "capture14_demuxlet")
 
 for (i in 1:length(demuxlet_out_list)){
   
   demuxlet_out <- demuxlet_out_list[i]
-  data <- read.csv(file=paste0("demuxlet_csv_outs/",demuxlet_out,"_out.csv"), header=TRUE)
+  data <- read.csv(file=paste0("OUTPUTS/demuxlet_csv_outs/",demuxlet_out,"_out.csv"), header=TRUE)
   
   assign(paste0(demuxlet_out), as.data.frame(data))
 }
@@ -137,12 +129,11 @@ for (i in 1:length(batchList)){
 
 
 
-
 # Create and save a merged unfiltered seurat object -----------------------
 
 merge_unfilt <- merge(capture1_unfilt, y = c(capture2_unfilt, capture3_unfilt, capture4_unfilt, capture5_unfilt, capture6_unfilt, capture7_unfilt, capture8_unfilt, capture9_unfilt, capture10_unfilt, capture11_unfilt, capture12_unfilt, capture13_unfilt, capture14_unfilt), add.cell.ids = batchList, project = "BM_CD34_scRNA_unfiltered")
-saveRDS(merge_unfilt, file = "merged_UNFILTERED_seuratObject.rds")
-fwrite(merge_unfilt@meta.data, "all_cells_unfiltered_metadata.txt")
+saveRDS(merge_unfilt, file = "OUTPUTS/merged_UNFILTERED_seuratObject.rds")
+fwrite(merge_unfilt@meta.data, "OUTPUTS/all_cells_unfiltered_metadata.txt")
 
 
 
@@ -210,11 +201,11 @@ for (i in 1:length(seuratObjectList_unfilt)){
   batch <- batchList[i]
   seuratObject <- seuratObjectList_unfilt[[i]]
   
-  pdf(paste0("QC_plots/before_filtering/",batch,"_feature_count_MTperc_beforeSubset.pdf"), height = 5, width = 8)
+  pdf(paste0("OUTPUTS/QC_plots/before_filtering/",batch,"_feature_count_MTperc_beforeSubset.pdf"), height = 5, width = 8)
   print(VlnPlot(seuratObject, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3))
   dev.off()
   
-  pdf(paste0("QC_plots/before_filtering/",batch,"_feature-feature_relationships_beforeSubset.pdf"), height = 5, width = 10)
+  pdf(paste0("OUTPUTS/QC_plots/before_filtering/",batch,"_feature-feature_relationships_beforeSubset.pdf"), height = 5, width = 10)
   plot1 <- FeatureScatter(seuratObject, feature1 = "nCount_RNA", feature2 = "percent.mt")
   plot2 <- FeatureScatter(seuratObject, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
   print(plot1 + plot2)
@@ -252,11 +243,11 @@ for (i in 1:length(seuratObjectList)){
   seuratObject <- seuratObjectList[[i]]
   
   ## all QC seurat plots
-  pdf(paste0("QC_plots/after_filtering/",batch,"_feature_count_MTperc.pdf"), height = 5, width = 8)
+  pdf(paste0("OUTPUTS/QC_plots/after_filtering/",batch,"_feature_count_MTperc.pdf"), height = 5, width = 8)
   print(VlnPlot(seuratObject, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3))
   dev.off()
   
-  pdf(paste0("QC_plots/after_filtering/",batch,"_feature-feature_relationships_scatter.pdf"), height = 5, width = 10)
+  pdf(paste0("OUTPUTS/QC_plots/after_filtering/",batch,"_feature-feature_relationships_scatter.pdf"), height = 5, width = 10)
   plot1 <- FeatureScatter(seuratObject, feature1 = "nCount_RNA", feature2 = "percent.mt")
   plot2 <- FeatureScatter(seuratObject, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
   print(plot1 + plot2)
@@ -276,18 +267,18 @@ demuxlet_class_percentages$perc_ambiguous <- round(as.numeric(as.character(demux
 demuxlet_class_percentages$singlet_total <- round(as.numeric(as.character(demuxlet_class_percentages$singlet_total)), 4)
 demuxlet_class_percentages$doublet_total <- round(as.numeric(as.character(demuxlet_class_percentages$doublet_total)), 4)
 demuxlet_class_percentages$ambiguous_total <- round(as.numeric(as.character(demuxlet_class_percentages$ambiguous_total)), 4)
-write.table(demuxlet_class_percentages, "demuxlet_class_stats.txt", quote = FALSE, row.names = FALSE)
+write.table(demuxlet_class_percentages, "OUTPUTS/demuxlet_class_stats.txt", quote = FALSE, row.names = FALSE)
 
 cell_nums_final <- cbind(cell_nums_unfiltered, cell_nums_singlets, cell_nums_singlets_QCfiltered, cell_nums_percent_singlets_retained)
 row.names(cell_nums_final) <- batchNames_list
-write.table(cell_nums_final, "cell_numbers_after_QC_summary.txt", quote = FALSE, row.names = TRUE)
+write.table(cell_nums_final, "OUTPUTS/cell_numbers_after_QC_summary.txt", quote = FALSE, row.names = TRUE)
 
 
 # merge filtered Seurat objects -------------------------------------------
 
 mergeAllCells <- merge(capture1_filt, y = c(capture2_filt, capture3_filt, capture4_filt, capture5_filt, capture6_filt, capture7_filt, capture8_filt, capture9_filt, capture10_filt, capture11_filt, capture12_filt, capture13_filt, capture14_filt), add.cell.ids = batchList, project = "BM_CD34_scRNA")
 
-saveRDS(mergeAllCells, file = "merged_filtered_NOLABEL_seuratObject.rds")
+saveRDS(mergeAllCells, file = "OUTPUTS/merged_filtered_NOLABEL_seuratObject.rds")
 
 # Add Td0/Tm3 label -------------------------------------------------------
 timepoint <- vector(length=length(mergeAllCells$BEST))
@@ -320,5 +311,5 @@ mergeAllCells$vaccination <- ifelse(mergeAllCells@meta.data$BEST %in% CTL, "CTL"
 mergeAllCells$vaccination <- factor(mergeAllCells$vaccination, levels = c("CTL","BCG"))
 
 
-saveRDS(mergeAllCells, file = "merged_filtered_seuratObject.rds")
+saveRDS(mergeAllCells, file = "OUTPUTS/merged_filtered_seuratObject.rds")
 #save.image(file = "mergedAllCells_seuratObject_environment.RData")
