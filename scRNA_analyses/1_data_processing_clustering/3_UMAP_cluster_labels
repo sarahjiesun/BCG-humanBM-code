@@ -1,0 +1,199 @@
+#R version 4.1.0
+library(ggplot2)
+library(cowplot)
+library(reticulate)
+library(tidyr)
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(grid)
+library(gridExtra)
+library(Seurat)
+library(sctransform)
+library(data.table)
+library(stringr)
+library(ggpubr)
+
+
+# setup -------------------------------------------------------------------
+
+options(future.globals.maxSize = 1000 * 1024^2)
+OUT_DIR <- c("clustering_all_genes_regress_individual/")
+dir.create(OUT_DIR)
+
+
+# Read in merged_scaled_integrated_clustered object -----------------------
+
+allCells_integrated <- readRDS(file = "sctransform_all_genes_regress_individual/mergedAllCells_seuratObject_withClusters_scale.rds")
+
+
+
+# print UMAP --------------------------------------------------------------
+
+pdf(paste0(OUT_DIR,"UMAP.pdf"), width=7, height=5)
+print(DimPlot(allCells_integrated, reduction = "umap", label = TRUE) + NoLegend())
+dev.off()
+
+
+# Plot categorical covariates ---------------------------------------------
+
+covariates <- c("vaccination", "timepoint", "batchID")
+for(i in 1:length(covariates))
+{
+  covar <- covariates[i]
+  pdf(paste0(OUT_DIR,"UMAP_",covar,".pdf"), width=7, height=5)
+  print(DimPlot(allCells_integrated, reduction = "umap", group.by = covar))
+  dev.off()
+}
+
+# Plot numeric covariates -------------------------------------------------
+
+covariates <- c("nCount_RNA", "nFeature_RNA", "percent.mt")
+for(i in 1:length(covariates)){
+  covar <- covariates[i]
+  pdf(paste0(OUT_DIR,"UMAP_",covar,".pdf"), width=7, height=5)
+  print(FeaturePlot(allCells_integrated, reduction = "umap", features = covar))
+  dev.off()
+}
+
+pdf(paste0(OUT_DIR,"PCA.pdf"))
+print(DimPlot(allCells_integrated, label = TRUE, reduction = "pca") + NoLegend())
+dev.off()
+
+pdf(paste0(OUT_DIR,"UMAP_split_CTL_BCG.pdf"), width = 10, height = 4)
+DimPlot(allCells_integrated, reduction = "umap", split.by = "vaccination")
+dev.off()
+
+pdf(paste0(OUT_DIR,"UMAP_split_timepoint.pdf"), width = 10, height = 4)
+DimPlot(allCells_integrated, reduction = "umap", split.by = "timepoint")
+dev.off()
+
+png(paste0(OUT_DIR,"single_cell_stats.png"), width = 2160, height = 720)
+VlnPlot(allCells_integrated, features=c("nCount_RNA","nFeature_RNA","percent.mt"))
+dev.off()
+
+
+# Plot cluster 13 cells for each condition and timepoint ------------------
+
+allCells_integrated_temp_list <- SplitObject(allCells_integrated, split.by = "seurat_clusters")
+cluster13_obj <- allCells_integrated_temp_list[[22]]
+cluster13_BCG <- SplitObject(cluster13_obj, split.by = "vaccination")[[1]]
+cluster13_CTL <- SplitObject(cluster13_obj, split.by = "vaccination")[[2]]
+
+pdf(paste0(OUT_DIR,"cluster13_BCG_UMAP_split_timepoint.pdf"), width = 10, height = 4)
+DimPlot(cluster13_BCG, reduction = "umap", split.by = "timepoint")
+dev.off()
+
+pdf(paste0(OUT_DIR,"cluster13_CTL_UMAP_split_timepoint.pdf"), width = 10, height = 4)
+DimPlot(cluster13_CTL, reduction = "umap", split.by = "timepoint")
+dev.off()
+
+# Label cells with UNIQUE sample label combining donor+timepoint+vaccination ------------------------------------
+
+UNIQUE_ID <- vector(length=length(row.names(allCells_integrated@meta.data)))
+
+for (i in 1:length(row.names(allCells_integrated@meta.data)))
+{
+  UNIQUE_ID[i] <- paste0(allCells_integrated$BEST[i],"_",allCells_integrated$timepoint[i],"_",allCells_integrated$vaccination[i])
+}
+
+allCells_integrated$UNIQUE_ID <- UNIQUE_ID
+
+#write UNIQUE_ID names
+unique_id_names <- unique(allCells_integrated$UNIQUE_ID)
+write.table(unique_id_names, file=paste(OUT_DIR,"unique_id_names_all.txt"))
+
+#map cluster number to Ident
+allCells_integrated$seurat_clusters <- Idents(allCells_integrated)
+
+
+#Save merged object with UNIQUE ID labels
+
+saveRDS(allCells_integrated, file=paste0(OUT_DIR,"allCells_integrated_NO_CLUSTER_NAME_UNIQUE_IDs.rds"))
+
+
+# Determine the number of cells from each sample in each cluster ----------
+
+allCells_integrated <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_NO_CLUSTER_NAME_UNIQUE_IDs.rds"))
+unique_ids <- unique(allCells_integrated$UNIQUE_ID)
+unique_ids = unique_ids[!(unique_ids %in% "SNG-LB-SS-1S-RS-S9-CD34neg_S8_R1_001_Td0_BCG" )]
+
+allCells_integrated <- subset(
+  x = allCells_integrated ,
+  subset = UNIQUE_ID %in% unique_ids
+)
+
+meta_data <- read.csv(file="all_samples_meta_data.csv")
+
+allCells_by_cluster_list <- SplitObject(allCells_integrated, split.by = "seurat_clusters")
+
+
+for(i in 1:length(allCells_by_cluster_list)) 
+{
+  name <- names(allCells_by_cluster_list)[i]
+  obj <- allCells_by_cluster_list[[i]]
+  md <- obj@meta.data
+  
+  obj_split <- SplitObject(obj, split.by = "UNIQUE_ID")
+  sample_nums <- vector(length=length(obj_split))
+  sample_names <- vector(length=length(obj_split))
+  timepoint <- vector(length=length(obj_split))
+  vaccination <- vector(length=length(obj_split))
+  donor <- vector(length=length(obj_split))
+  for(j in 1:length(obj_split))
+  {
+    obj_temp <- obj_split[[j]]
+    sample_nums[j] <- dim(obj_temp)[2]
+    sample_names[j] <- names(obj_split)[j]
+    timepoint[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$timepoint
+    vaccination[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$vaccination
+    donor[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$donor
+  }
+  df <- data.frame(cbind(sample_names, sample_nums, timepoint, vaccination, donor))
+  assign(paste0("cluster",name,"_df"),df)
+  print(i)
+}
+
+cell_df_list <- list(cluster0_df, cluster1_df, cluster2_df, cluster3_df, cluster4_df, cluster5_df, cluster6_df, cluster7_df, cluster8_df, cluster9_df, cluster10_df, cluster11_df, cluster12_df, cluster13_df, cluster14_df, cluster15_df,
+                       cluster16_df, cluster17_df, cluster18_df, cluster19_df, cluster20_df, cluster21_df, cluster22_df)
+clusters <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22")
+
+# for(i in length(cell_df_list))
+# {
+#   name <- clusters[i]
+#   df <- cell_df_list[[i]]
+#   time_vacc <- paste0(df$timepoint, df$vaccination)
+#   df <- data.frame(cbind(df, time_vacc))
+#   df$time_vacc <- factor(df$time_vacc, c("Td0BCG", "Tm3BCG", "Td0CTL", "Tm3CTL"))
+#   
+#   ggplot(df, aes(x=time_vacc, y=as.numeric(sample_nums), group=donor)) +
+#     geom_line(aes(color=donor))+
+#     geom_point(aes(color=donor))+theme_light()
+#   ggsave(paste0(OUT_DIR,"cluster",clusters[i], "_cell_nums.tiff"))
+# }
+
+
+#Get names of samples with fewer than 20 cells in the cluster (filtered in analysis 5)
+for(i in 1:length(clusters))
+{
+  df <- cell_df_list[[i]]
+  df_subset <- subset(df, as.numeric(df$sample_nums) <20)
+  names <- df_subset$sample_names
+  assign(paste0("cluster",clusters[i],"_filter20"), names)
+}
+filter_20_list <- list(cluster0_filter20, cluster1_filter20, cluster2_filter20, cluster3_filter20,cluster4_filter20,cluster5_filter20,cluster6_filter20,cluster7_filter20,cluster8_filter20,cluster9_filter20,cluster10_filter20,cluster11_filter20,cluster12_filter20,cluster13_filter20,
+                       cluster14_filter20,cluster15_filter20,cluster16_filter20,cluster17_filter20,cluster18_filter20,cluster19_filter20,cluster20_filter20,cluster21_filter20,cluster22_filter20)
+saveRDS(filter_20_list, file=paste0(OUT_DIR,"filter_20_list.rds"))
+
+# Save plots for each cluster manually ------------------------------------
+
+name <- clusters[14]
+df <- cell_df_list[[14]]
+time_vacc <- paste0(df$timepoint, df$vaccination)
+df <- data.frame(cbind(df, time_vacc))
+df$time_vacc <- factor(df$time_vacc, c("Td0BCG", "Tm3BCG", "Td0CTL", "Tm3CTL"))
+
+ggplot(df, aes(x=time_vacc, y=as.numeric(sample_nums), group=donor)) +
+  geom_line(aes(color=donor))+
+  geom_point(aes(color=donor))+theme_light()
+ggsave(paste0(OUT_DIR,"cluster",clusters[14], "_cell_nums.tiff"))
