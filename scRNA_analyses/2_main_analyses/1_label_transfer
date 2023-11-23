@@ -1,0 +1,574 @@
+
+#R version 4.1.0 loaded
+#rstudio/1.4
+#geos/3.9.1 loaded
+#hdf5/1.12.0 loaded 
+#cmake loaded
+
+.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+
+library(ggplot2)
+library(cowplot)
+library(reticulate)
+library(tidyr)
+library(reshape2)
+library(plyr)
+library(dplyr)
+library(grid)
+library(gridExtra)
+library(Seurat)
+library(sctransform)
+library(data.table)
+library(Nebulosa)
+
+setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited")
+OUT_DIR <- "label_transfer/"
+#dir.create(OUT_DIR)
+
+reference_BM <- readRDS(file=paste0("/project2/lbarreiro/users/Saideep/Mihai_grant_scrnaseq/actual_final.rds"))
+
+cd34 = subset(reference_BM, orig.ident == "CD34")
+DefaultAssay(cd34) = "RNA"
+DimPlot(cd34, group.by = "cd34_prediction")
+cd34 = subset(cd34, percent.mt < 25)
+cd34 <- SCTransform(cd34)
+#cd34 <- NormalizeData(cd34)
+#cd34 <- FindVariableFeatures(cd34)
+#cd34 <- ScaleData(cd34)
+cd34 <- RunPCA(cd34, verbose = FALSE)
+cd34 <- FindNeighbors(cd34, dims = 1:30)
+cd34 <- FindClusters(cd34, resolution = 0.2, verbose = FALSE)
+cd34 <- RunUMAP(cd34, dims = 1:30, seed.use = 2)
+
+pdf(paste0(OUT_DIR,"reference_UMAP_seurat_clusters.pdf"), width=7, height=5)
+DimPlot(cd34, group.by = "seurat_clusters")
+dev.off()
+
+pdf(paste0(OUT_DIR,"reference_UMAP_cd34_prediction.pdf"), width=7, height=5)
+DimPlot(cd34, group.by = "cd34_prediction")
+dev.off()
+
+cd34_meta = cd34@meta.data
+
+Idents(cd34) = cd34$seurat_clusters
+cd34 <- RenameIdents(object = cd34,
+                     `0` = "CMP",
+                     `1` = "GMP",
+                     `2` = "HSC",
+                     `3` = "MEP",
+                     `4` = "PreBNK",
+                     `5` = "mixed")
+cd34$clust_names = Idents(cd34)
+#DefaultAssay(cd34) <- "integrated"
+
+pdf(paste0(OUT_DIR,"reference_UMAP_seurat_clusters_renamed.pdf"), width=7, height=5)
+print(DimPlot(cd34, group.by = "clust_names", cols = c('CMP'='#EEA236','GMP'='#5CB85C','HSC'='#D43F3A','MEP'='#9632B8','PreBNK'='#357EBD',
+                                                 'mixed'='#46B8DA')))
+dev.off()
+
+
+query_BM <- readRDS(file=paste0("../Initial_processing_clustering_Seurat/clustering_all_genes_regress_individual/allCells_integrated_NO_CLUSTER_NAME_UNIQUE_IDs.rds"))
+
+
+anchors <- FindTransferAnchors(reference = cd34, query = query_BM,
+                               dims = 1:30, reference.reduction = "pca", reference.assay = "SCT", query.assay = "integrated")
+
+
+
+# 
+# ##Transfer data
+# for(i in 1:length(query_BM_list))
+# {
+#   predictions <- TransferData(anchorset = anchors_list[[i]], refdata = cd34$clust_names,
+#                               dims = 1:30)
+#   query_BM_list[[i]] <- AddMetaData(query_BM_list[[i]], metadata = predictions)
+# }
+# 
+# test <- query_BM_list[[1]]
+# test <- RunPCA(test, npcs = 30)
+# test <- RunUMAP(test, dims = 1:30, seed.use = 2020)
+# test <- FindNeighbors(test, dims = 1:20)
+# test <- FindClusters(test, resolution = 0.5)
+# DimPlot(test, group.by = "seurat_clusters")
+
+
+##UMAP projection
+cd34 <- RunUMAP(cd34, dims = 1:30, reduction = "pca", return.model = TRUE,  seed.use = 2)
+DimPlot(cd34, group.by = "clust_names", cols = c('CMP'='#EEA236','GMP'='#5CB85C','HSC'='#D43F3A','MEP'='#9632B8','PreBNK'='#357EBD',
+                                                 'mixed'='#46B8DA'))
+
+
+query_BM <- MapQuery(anchorset = anchors, reference = cd34, query = query_BM,
+                     refdata = list(celltype = "clust_names"), reference.reduction = "pca", reduction.model = "umap")
+
+
+
+p1 <- DimPlot(cd34, reduction = "umap", group.by = "clust_names", label = TRUE, label.size = 3,
+              repel = TRUE, cols = c('CMP'='#EEA236','GMP'='#5CB85C','HSC'='#D43F3A','MEP'='#9632B8','PreBNK'='#357EBD',
+                                     'mixed'='#46B8DA')) + NoLegend() + ggtitle("Reference annotations")
+p2 <- DimPlot(query_BM, reduction = "ref.umap", group.by = "predicted.celltype", label = TRUE,
+              label.size = 3, repel = TRUE, cols = c('CMP'='#EEA236','GMP'='#5CB85C','HSC'='#D43F3A','MEP'='#9632B8','PreBNK'='#357EBD',
+                                                     'mixed'='#46B8DA')) + NoLegend() + ggtitle("Query transferred labels")
+p3 <- DimPlot(query_BM, reduction = "ref.umap", group.by = "seurat_clusters", label = TRUE,
+              label.size = 3, repel = TRUE) + NoLegend() + ggtitle("Seurat clusters")
+
+pdf(paste0(OUT_DIR,"ref_query_UMAP_label_transfer.pdf"), width=10, height=5)
+p1 + p2
+dev.off()
+
+pdf(paste0(OUT_DIR,"ref_query_UMAP_seurat_clusters.pdf"), width=10, height=5)
+p1 + p3
+dev.off()
+
+##rename seurat clusters of integrated object
+Idents(query_BM) = query_BM$seurat_clusters
+query_BM <- RenameIdents(object = query_BM,
+                     `0` = "HSC_b",
+                     `1` = "HSC_a",
+                     `2` = "CMP_b",
+                     `3` = "MEP_a1",
+                     `4` = "GMP_b1",
+                     `5` = "CMP_a",
+                     `6` = "GMP_b2",
+                     `7` = "MEP_a2",
+                     `8` = "CMP_b",
+                     `9` = "MEP_a3",
+                     `10` = "mixed_b",
+                     `11` = "PreBNK",
+                     `12` = "mixed_a",
+                     `13` = "CMP_a",
+                     `14` = "CMP_b",
+                     `15` = "mixed_a",
+                     `16` = "CMP_c",
+                     `17` = "MEP_a1",
+                     `18` = "unknown1",
+                     `19` = "unknown2",
+                     `20` = "CMP_a",
+                     `21` = "mixed_b",
+                     `22` = "MEP_a3")
+query_BM$clust_names = Idents(query_BM)
+
+p4 <- DimPlot(query_BM, reduction = "ref.umap", group.by = "clust_names", label = TRUE,
+              label.size = 3,repel = TRUE, cols = c('HSC_a'='#990033','HSC_b'='#991A00','CMP_a'='#FFC20A','CMP_b'='#FFD147','CMP_c'='#CC9900',
+                                                     'GMP_b1'='#33CC00', 'GMP_b2' ='#99CC00', 'MEP_a1'='#990080', 'MEP_a2'='#990080', 'MEP_a3'='#990080',
+                                                    'mixed_a'='#46B8DA', 'mixed_b'='#5DB1DD', 'PreBNK'='#1A0099','unknown1'='#A9A9A9','unknown2'='#A9A9A9')) + NoLegend() + ggtitle("Seurat clusters labelled")
+
+
+
+pdf(paste0(OUT_DIR,"ref_query_UMAP_seurat_clusters_labelled.pdf"), width=10, height=5)
+p1 + p4
+dev.off()
+
+
+
+# Label cells with UNIQUE sample label combining donor+timepoint+vaccination ------------------------------------
+
+UNIQUE_ID <- vector(length=length(row.names(query_BM@meta.data)))
+  
+for (i in 1:length(row.names(query_BM@meta.data)))
+{
+  UNIQUE_ID[i] <- paste0(query_BM$BEST[i],"_",query_BM$timepoint[i],"_",query_BM$vaccination[i])
+}
+  
+query_BM$UNIQUE_ID <- UNIQUE_ID
+  
+  
+
+##rename seurat clusters to FINAL assignments
+Idents(query_BM) = query_BM$seurat_clusters
+query_BM <- RenameIdents(object = query_BM,
+                         `0` = "HSC_b",
+                         `1` = "HSC_a",
+                         `2` = "CMP_b",
+                         `3` = "MEP_a",
+                         `4` = "GMP_a",
+                         `5` = "CMP_a",
+                         `6` = "GMP_b",
+                         `7` = "MEP_b",
+                         `8` = "CMP_b",
+                         `9` = "MEP_c",
+                         `10` = "MLP_b",
+                         `11` = "PreBNK",
+                         `12` = "MLP_a",
+                         `13` = "CMP_a",
+                         `14` = "CMP_b",
+                         `15` = "MLP_a",
+                         `16` = "CMP_c",
+                         `17` = "MEP_a",
+                         `18` = "unknown1",
+                         `19` = "unknown2",
+                         `20` = "CMP_a",
+                         `21` = "MLP_b",
+                         `22` = "MEP_c")
+query_BM$clust_names = Idents(query_BM)
+
+
+#UMAP with alternate colors
+p5 <- DimPlot(query_BM, reduction = "ref.umap", group.by = "clust_names", label = TRUE,
+              label.size = 3,repel = TRUE, cols = c('HSC_a'='#990033','HSC_b'='#991A00','CMP_a'='#FF7F0E','CMP_b'='#FFD147','CMP_c'='#CC9900',
+                                                    'GMP_a'='#33CC00', 'GMP_b' ='#99CC00', 'MEP_a'='#8C5782', 'MEP_b'='#990080', 'MEP_c'='#990080',
+                                                    'MLP_a'='#46B8DA', 'MLP_b'='#5DB1DD', 'PreBNK'='#1A0099','unknown1'='#A9A9A9','unknown2'='#A9A9A9')) + NoLegend() + ggtitle("Seurat clusters labelled")
+
+pdf(paste0(OUT_DIR,"query_UMAP_seurat_clusters_labelled.pdf"), width=7.5, height=5)
+p5
+dev.off()
+
+
+#UMAP original shape with alternate colors
+p6 <- DimPlot(query_BM, reduction = "umap", group.by = "clust_names", label = TRUE, 
+              label.size = 3,repel = TRUE, cols = c('HSC_a'='#EF5350','HSC_b'='#CC0C00','CMP_a'='#FF7F0E','CMP_b'='#FFD147','CMP_c'='#CC9900',
+                                                    'GMP_a'='#33CC00', 'GMP_b' ='#99CC00', 'MEP_a'='#8C5782', 'MEP_b'='#990080', 'MEP_c'='#BA68C8',
+                                                    'MLP_a'='#46B8DA', 'MLP_b'='#0288D1', 'PreBNK'='#1A0099','unknown1'='#A9A9A9','unknown2'='#A9A9A9')) + NoLegend() + ggtitle("Seurat clusters labelled")
+
+
+pdf(paste0(OUT_DIR,"original_shape_query_UMAP_seurat_clusters_labelled.pdf"), width=5, height=4)
+p6
+dev.off()
+
+##ggplot version of original shape UMAP with alternate colors
+query_BM <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+
+## subset to exclude grey clusters that are not analyzed downstream
+main_clusters <- as.character(unique(query_BM@meta.data$clust_names)[which(!(unique(query_BM@meta.data$clust_names) %in% c('unknown1', 'unknown2')))])
+query_BM_subset <- subset(
+  x = query_BM,
+  subset = clust_names %in% main_clusters
+)
+
+embed_query_BM <- data.frame(Embeddings(query_BM_subset, reduction = "umap"))
+#check that cells are in the same order
+which(row.names(embed_query_BM) != row.names(query_BM_subset@meta.data) )
+df <- data.frame(query_BM_subset@meta.data)
+embed_query_BM$cluster <- df$clust_names
+
+myColorScale <- c('HSC_a'='#EF5350','HSC_b'='#CC0C00','CMP_a'='#FF7F0E','CMP_b'='#FFD147','CMP_c'='#CC9900',
+                  'GMP_a'='#33CC00', 'GMP_b' ='#99CC00', 'MEP_a'='#8C5782', 'MEP_b'='#990080', 'MEP_c'='#BA68C8',
+                  'MLP_a'='#46B8DA', 'MLP_b'='#0288D1', 'PreBNK'='#1A0099','unknown1'='#A9A9A9','unknown2'='#A9A9A9')
+
+tiff(paste0(OUT_DIR, "Fig1C_original_shape_query_UMAP_seurat_clusters_labelled_ggplot.tiff"), units="in", width=3.5, height=3, res=300)
+ggplot(embed_query_BM, aes(x=UMAP_1, y=UMAP_2, color=cluster)) + geom_point(aes(color=cluster), alpha=0.6) + theme_classic() + theme(legend.position="none")+
+scale_color_manual(name= "", values=myColorScale)
+dev.off()
+
+#save same plot as RDS
+p <- ggplot(embed_query_BM, aes(x=UMAP_1, y=UMAP_2, color=cluster)) + geom_point(aes(color=cluster), alpha=0.6) + theme_classic() + theme(legend.position="none")+
+  scale_color_manual(name= "", values=myColorScale)
+
+saveRDS(p, file=paste0(OUT_DIR,"Figure_1C_UMAP.rds"))
+
+
+
+
+# Plot cell type specific markers -----------------------------------------
+query_BM <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+DefaultAssay(query_BM) <- "SCT"
+
+png(paste0(OUT_DIR,"MLP_markers_DNTT.png"),units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("DNTT"), reduction = "umap", cols=c('lightgrey', '#46B8DA'))
+dev.off()
+
+png(paste0(OUT_DIR,"Pro-B_markers_PAX5.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("PAX5"), reduction = "umap", cols=c('lightgrey', '#1A0099'))
+dev.off()
+
+png(paste0(OUT_DIR,"Pro-B_markers_CD24.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("CD24"), reduction = "umap", cols=c('lightgrey', '#1A0099'))
+dev.off()
+
+png(paste0(OUT_DIR,"MEP_markers_HBB.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("HBB"), reduction = "umap", cols=c('lightgrey', '#990080'))
+dev.off()
+
+png(paste0(OUT_DIR,"MEP_markers_KLF1.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("KLF1"), reduction = "umap", cols=c('lightgrey', '#BA68C8'))
+dev.off()
+
+png(paste0(OUT_DIR,"MEP_markers_GATA1.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("GATA1"), reduction = "umap", cols=c('lightgrey', '#BA68C8'))
+dev.off()
+
+png(paste0(OUT_DIR,"DC_markers_SPIB.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("SPIB"), reduction = "umap", cols=c('lightgrey', '#33CC00'))
+dev.off()
+
+png(paste0(OUT_DIR,"myeloid_markers_MPO.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("MPO"), reduction = "umap", cols=c('lightgrey', '#FFD147'))
+dev.off()
+
+
+png(paste0(OUT_DIR,"myeloid_markers_LY86.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("LY86"), reduction = "umap", cols=c('lightgrey', '#33CC00'))
+dev.off()
+
+png(paste0(OUT_DIR,"CEBPB.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("CEBPB"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"MPO.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("MPO"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"S100A8.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("S100A8"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"S100A9.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("S100A9"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"TLR4.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("TLR4"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"TLR9.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("TLR9"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"CSF3R.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("CSF3R"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"KLF6.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("KLF6"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+
+png(paste0(OUT_DIR,"EGR1.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("EGR1"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"CEBPG.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("CEBPG"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"CEBPA.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("CEBPA"), reduction = "umap", cols=c('lightgrey', '#FF7F00'))
+dev.off()
+
+png(paste0(OUT_DIR,"CEBPA_CEBPB.png"), units="in", width=10, height=4, res=350)
+FeaturePlot(query_BM, features = c("CEBPB", "CEBPA"), overlay=TRUE)
+dev.off()
+
+#Density plots
+png(paste0(OUT_DIR,"MPO_density.png"), units="in", width=5, height=4, res=350)
+plot_density(query_BM, "MPO",reduction = "umap", pal="plasma")
+dev.off()
+
+
+png(paste0(OUT_DIR,"GATA1_density.png"), units="in", width=5, height=4, res=350)
+plot_density(query_BM, "GATA1",reduction = "umap", pal="plasma")
+dev.off()
+
+png(paste0(OUT_DIR,"DNTT_density.png"), units="in", width=5, height=4, res=350)
+plot_density(query_BM, "DNTT",reduction = "umap", pal="plasma")
+dev.off()
+
+png(paste0(OUT_DIR,"SPIB_density.png"), units="in", width=5, height=4, res=350)
+plot_density(query_BM, "SPIB",reduction = "umap", pal="plasma")
+dev.off()
+
+
+FeaturePlot(query_BM, features = c("MPO", "IL6R", "S100A8", "S100A9", "CEBPB", "CSF3R"), reduction = "umap", cols=c('lightgrey', '#F100F1'), keep.scale = NULL)
+FeaturePlot(query_BM, features = c("CEBPA", "CEBPB"), reduction = "umap", cols=c('lightgrey', '#F100F1'), keep.scale = NULL)
+FeaturePlot(query_BM, features = c("CEBPA", "CEBPB"), reduction = "umap",  blend=TRUE, keep.scale = NULL)
+VlnPlot(query_BM, features = c("MPO"), slot = "counts", log = TRUE)
+
+png(paste0(OUT_DIR,"MPO_ridge.png"), units="in", width=5, height=4, res=350)
+RidgePlot(query_BM, features = "MPO")
+dev.off()
+
+RidgePlot(query_BM, features = "CSF3R")  #in HSCs
+RidgePlot(query_BM, features = "TLR4")
+RidgePlot(query_BM, features = "TLR2")
+RidgePlot(query_BM, features = "IL6R")  #in HSCs
+RidgePlot(query_BM, features = "IFNAR1") #in HSCs
+RidgePlot(query_BM, features = "IFNAR2") #in HSCs
+RidgePlot(query_BM, features = "IL3RA") #in HSCs
+RidgePlot(query_BM, features = "CSF3R")
+RidgePlot(query_BM, features = "CEBPA")
+
+
+## find all marker genes 
+hspc.markers <- FindAllMarkers(query_BM, only.pos = TRUE, min.pct = 0.25, logfc.threshold = 0.25)
+saveRDS(hspc.markers, file=paste0(OUT_DIR,"query_BM_markers_all.rds"))
+
+hspc.markers <- readRDS(file=paste0(OUT_DIR, "query_BM_markers_all.rds"))
+
+hspc.markers_HSC_a <- subset(hspc.markers, hspc.markers$cluster == "HSC_a")$gene[1:10]
+hspc.markers_CMP_a <- subset(hspc.markers, hspc.markers$cluster == "CMP_a")$gene[1:10]
+hspc.markers_GMP_a <- subset(hspc.markers, hspc.markers$cluster == "GMP_a")$gene[1:10]
+hspc.markers_MEP_a <- subset(hspc.markers, hspc.markers$cluster == "MEP_a")$gene[1:10]
+hspc.markers_PreBNK <- subset(hspc.markers, hspc.markers$cluster == "PreBNK")$gene[1:10]
+markers_plot <- c(hspc.markers_HSC_a, hspc.markers_CMP_a, hspc.markers_GMP_a, hspc.markers_MEP_a, hspc.markers_PreBNK)
+
+png(paste0(OUT_DIR,"HSPC_markers_heatmap.png"), units="in", width=5, height=4, res=350)
+DotPlot(query_BM, features = markers_plot, dot.min = 0, dot.scale = 2) + NoLegend()
+dev.off()
+
+# find all markers of HSCs
+HSCa.markers <- FindMarkers(query_BM, ident.1 = 'HSC_a', min.pct = 0.25)
+write.csv(HSCa.markers, file=paste0(OUT_DIR, "HSCa_markers_all.csv"))
+HSCa.markers <- read.csv(file=paste0(OUT_DIR, "HSCa_markers_all.csv"))
+
+png(paste0(OUT_DIR,"HSC_markers_HOXA9.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("HOXA9"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
+dev.off()
+
+png(paste0(OUT_DIR,"HSC_markers_ACE.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("ACE"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
+dev.off()
+
+png(paste0(OUT_DIR,"HSC_markers_DST.png"), units="in", width=5, height=4, res=350)
+FeaturePlot(query_BM, features = c("DST"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
+dev.off()
+
+# find all markers of CMP_b
+CMPb.markers <- FindMarkers(query_BM, ident.1 = 'CMP_b', min.pct = 0.25)
+
+CMPb.markers_pos <- FindMarkers(query_BM, only.pos = TRUE, ident.1 = 'CMP_b', min.pct = 0.25)
+write.csv(CMPb.markers_pos, file=paste0(OUT_DIR, "CMPb_markers_pos.csv"))
+
+#Save merged object with UNIQUE ID labels
+saveRDS(query_BM, file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+
+query_BM <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+
+#Determine the number of total cells in each cluster
+meta <- query_BM@meta.data
+length(which(meta$clust_names == 'HSC_a')) #9637
+length(which(meta$clust_names == 'HSC_b')) #10953
+length(which(meta$clust_names == 'CMP_a')) #9174
+length(which(meta$clust_names == 'CMP_b')) #14918
+length(which(meta$clust_names == 'CMP_c')) #1715
+length(which(meta$clust_names == 'GMP_a')) #6631
+length(which(meta$clust_names == 'GMP_b')) #6423
+length(which(meta$clust_names == 'MEP_a')) #8871
+length(which(meta$clust_names == 'MEP_b')) #5439
+length(which(meta$clust_names == 'MEP_c')) #3811
+length(which(meta$clust_names == 'MLP_a')) #5153
+length(which(meta$clust_names == 'MLP_b')) #3837
+length(which(meta$clust_names == 'PreBNK')) #3371
+
+# Determine the number of cells from each sample in each cluster ----------
+allCells_integrated <- query_BM
+DefaultAssay(allCells_integrated) <- "integrated"
+
+unique_ids <- unique(allCells_integrated$UNIQUE_ID)
+unique_ids = unique_ids[!(unique_ids %in% "SNG-LB-SS-1S-RS-S9-CD34neg_S8_R1_001_Td0_BCG" )]
+
+allCells_integrated <- subset(
+  x = allCells_integrated ,
+  subset = UNIQUE_ID %in% unique_ids
+)
+
+meta_data <- read.csv(file="all_samples_meta_data.csv")
+
+allCells_by_cluster_list <- SplitObject(allCells_integrated, split.by = "clust_names")
+
+for(i in 1:length(allCells_by_cluster_list)) 
+{
+  name <- names(allCells_by_cluster_list)[i]
+  obj <- allCells_by_cluster_list[[i]]
+  md <- obj@meta.data
+    
+  obj_split <- SplitObject(obj, split.by = "UNIQUE_ID")
+  sample_nums <- vector(length=length(obj_split))
+  sample_names <- vector(length=length(obj_split))
+  timepoint <- vector(length=length(obj_split))
+  vaccination <- vector(length=length(obj_split))
+  donor <- vector(length=length(obj_split))
+  for(j in 1:length(obj_split))
+  {
+    obj_temp <- obj_split[[j]]
+    sample_nums[j] <- dim(obj_temp)[2]
+    sample_names[j] <- names(obj_split)[j]
+    timepoint[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$timepoint
+    vaccination[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$vaccination
+    donor[j] <- subset(meta_data, meta_data$Sample %in% sample_names[j])$donor
+  }
+  df <- data.frame(cbind(sample_names, sample_nums, timepoint, vaccination, donor))
+  assign(paste0(name,"_df"),df)
+  print(i)
+}
+
+cell_df_list <- list(HSC_a_df, HSC_b_df, CMP_a_df, CMP_b_df, CMP_c_df, GMP_b1_df, GMP_b2_df, MEP_a1_df, MEP_a2_df, MEP_a3_df, mixed_a_df, mixed_b_df, PreBNK_df, unknown1_df, unknown2_df)
+clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK", "unknown1", "unknown2")
+
+
+# Determine the fold change in cell nums between Td0 and Tm3 --------------
+
+for(i in 1:length(allCells_by_cluster_list)) 
+{
+  name <- names(allCells_by_cluster_list)[i]
+  obj <- allCells_by_cluster_list[[i]]
+  md <- obj@meta.data
+  
+  obj_split <- SplitObject(obj, split.by = "BEST")
+  Td0_count <- vector(length=length(obj_split))
+  Tm3_count <- vector(length=length(obj_split))
+  fold_change <- vector(length=length(obj_split))
+  donor <- vector(length=length(obj_split))
+  for(j in 1:length(obj_split))
+  {
+    md_temp <- obj_split[[j]]@meta.data
+    donor[j] <- names(obj_split)[j]
+    Td0_count[j] <- length(row.names(subset(md_temp, md_temp$timepoint == "Td0")))
+    Tm3_count[j] <- length(row.names(subset(md_temp, md_temp$timepoint == "Tm3")))
+    if(Td0_count[[j]] != 0 && Tm3_count[[j]] != 0)
+    {
+      fold_change[j] <- Td0_count[j]/Tm3_count[j]
+    }
+    else
+      fold_change[j] <- 0
+  }
+  
+  df <- data.frame(cbind(donor, Td0_count, Tm3_count, fold_change))
+  write.csv(df, file=paste0(OUT_DIR, name,"_FC_cell_count_df.csv"))
+  
+  assign(paste0(name,"_FC_df"),df)
+  
+  print(i)
+}
+
+cell_FC_df_list <- list(HSC_a_FC_df, HSC_b_FC_df, CMP_a_FC_df, CMP_b_FC_df, CMP_c_FC_df, GMP_b1_FC_df, GMP_b2_FC_df, MEP_a1_FC_df, MEP_a2_FC_df, MEP_a3_FC_df, mixed_a_FC_df, mixed_b_FC_df, PreBNK_FC_df, unknown1_FC_df, unknown2_FC_df)
+
+
+#Get names of samples with fewer than 20 cells in the cluster (filtered in analysis 5-10  )
+for(i in 1:length(clusters))
+{
+  df <- cell_df_list[[i]]
+  df_subset <- subset(df, as.numeric(df$sample_nums) <20)
+  names <- df_subset$sample_names
+  assign(paste0(clusters[i],"_filter20"), names)
+}
+filter_20_list <- list(HSC_a_filter20, HSC_b_filter20, CMP_a_filter20, CMP_b_filter20, CMP_c_filter20, GMP_b1_filter20, GMP_b2_filter20, MEP_a1_filter20, MEP_a2_filter20, MEP_a3_filter20, mixed_a_filter20, mixed_b_filter20, PreBNK_filter20, unknown1_filter20, unknown2_filter20)
+saveRDS(filter_20_list, file=paste0(OUT_DIR,"filter_20_list.rds"))
+filter_20_list <- readRDS(file=paste0(OUT_DIR,"filter_20_list.rds"))
+
+
+# Get names of samples with 4-fold difference in cell nums between Td0 and Tm3 --------
+
+for(i in 1:length(clusters))
+{
+  df <- cell_FC_df_list[[i]]
+  df_subset <- subset(df, (as.numeric(df$fold_change) <0.25 | as.numeric(df$fold_change) > 4))
+  names <- df_subset$donor
+  assign(paste0(clusters[i],"_filterFC"), names)
+}
+filter_FC_list <- list(HSC_a_filterFC, HSC_b_filterFC, CMP_a_filterFC, CMP_b_filterFC, CMP_c_filterFC, GMP_b1_filterFC, GMP_b2_filterFC, MEP_a1_filterFC, MEP_a2_filterFC, MEP_a3_filterFC, mixed_a_filterFC, mixed_b_filterFC, PreBNK_filterFC, unknown1_filterFC, unknown2_filterFC)
+saveRDS(filter_FC_list, file=paste0(OUT_DIR,"filter_FC_list.rds"))
+
+
+
+# Save plots for each cluster manually ------------------------------------
+
+name <- clusters[15]
+df <- cell_df_list[[15]]
+time_vacc <- paste0(df$timepoint, df$vaccination)
+df <- data.frame(cbind(df, time_vacc))
+df$time_vacc <- factor(df$time_vacc, c("Td0BCG", "Tm3BCG", "Td0CTL", "Tm3CTL"))
+
+ggplot(df, aes(x=time_vacc, y=as.numeric(sample_nums), group=donor)) +
+  geom_line(aes(color=donor))+
+  geom_point(aes(color=donor))+theme_light()
+ggsave(paste0(OUT_DIR,clusters[15], "_cell_nums.tiff"))
