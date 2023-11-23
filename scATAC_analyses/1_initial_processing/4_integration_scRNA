@@ -1,0 +1,292 @@
+library(ArchR)
+addArchRThreads(threads = 16) 
+addArchRGenome("hg38")
+library(readr)
+library(harmony)
+library(Seurat)
+
+
+# Load merged scRNAseq Seurat object with celltype labels -----------------
+
+
+merged_RNA <- readRDS(file = paste0("../../../../BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Initial_processing_clustering_Seurat/merged_filtered_seuratObject.rds"))
+
+labeled_RNA <- readRDS(file=paste0("../../../../BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis10_label_transfer_small_clusters/label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+
+
+cell_label_unordered <- labeled_RNA$clust_names
+
+
+order <- match(row.names(merged_RNA@meta.data), row.names(labeled_RNA@meta.data))
+cell_labels_ordered <- cell_label_unordered[order]
+which(names(cell_labels_ordered) != row.names(merged_RNA@meta.data))
+
+merged_RNA$clust_names <- cell_labels_ordered
+
+
+# Integration unconstrained -------------------------------------------------------------
+
+
+projBM4 <- addGeneIntegrationMatrix(
+  ArchRProj = projBM3, 
+  useMatrix = "GeneScoreMatrix",
+  matrixName = "GeneIntegrationMatrix",
+  reducedDims = "Harmony",
+  seRNA = merged_RNA,
+  addToArrow = FALSE,
+  groupRNA = "clust_names",
+  nameCell = "predictedCell_Un",
+  nameGroup = "predictedGroup_Un",
+  nameScore = "predictedScore_Un"
+)
+
+df <- getCellColData(projBM4)
+
+
+
+
+# Contrained integration --------------------------------------------------
+
+
+cM <- as.matrix(confusionMatrix(projBM4$Clusters_harmony, projBM4$predictedGroup_Un))
+preClust <- colnames(cM)[apply(cM, 1 , which.max)]
+preClust <- cbind(preClust, rownames(cM)) #Assignments
+
+unique(unique(projBM4$predictedGroup_Un))
+
+
+#Broad cell types: HSC, CMP, GMP, MEP, mixed, PreBNK, unknown
+
+#Match ATAC clusters to the most abundant cell type 
+clustHSC <- c("C5", "C6", "C19", "C8")
+clustCMP <- c("C22", "C17", "C2", "C4", "C3", "C1", "C21", "C16")
+clustGMP <- c("C10", "C23", "C24")
+clustMEP <- c("C7", "C14", "C15", "C18")
+clustmixed <- c("C12", "C13")
+clustPreBNK <- c("C11", "C9")
+clustUnknown <- c("C20")
+
+#Get scRNA cells corresponding to each celltype 
+
+HSCi <- grep("HSC", merged_RNA$clust_names)
+CMPi <- grep("CMP", merged_RNA$clust_names)
+GMPi <- grep("GMP", merged_RNA$clust_names)
+MEPi <- grep("MEP", merged_RNA$clust_names)
+mixedi <- grep("mixed", merged_RNA$clust_names)
+PreBNKi <- grep("PreBNK", merged_RNA$clust_names)
+unknowni <- grep("unknown", merged_RNA$clust_names)
+rnaHSC <- row.names(merged_RNA@meta.data)[HSCi]
+rnaCMP <- row.names(merged_RNA@meta.data)[CMPi]
+rnaGMP <- row.names(merged_RNA@meta.data)[GMPi]
+rnaMEP <- row.names(merged_RNA@meta.data)[MEPi]
+rnamixed <- row.names(merged_RNA@meta.data)[mixedi]
+rnaPreBNK <- row.names(merged_RNA@meta.data)[PreBNKi]
+rnaUnknown <- row.names(merged_RNA@meta.data)[unknowni]
+
+
+groupList <- SimpleList(
+  HSC = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustHSC],
+    RNA = rnaHSC
+  ),
+  CMP = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustCMP],
+    RNA = rnaCMP
+  ),
+  GMP = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustGMP],
+    RNA = rnaGMP
+  ),
+  MEP = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustMEP],
+    RNA = rnaMEP
+  ),
+  mixed = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustmixed],
+    RNA = rnamixed
+  ),
+  PreBNK = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustPreBNK],
+    RNA = rnaPreBNK
+  ),
+  unknown = SimpleList(
+    ATAC = projBM4$cellNames[projBM4$Clusters_harmony %in% clustUnknown],
+    RNA = rnaUnknown
+  )
+)
+
+
+projBM4 <- addGeneIntegrationMatrix(
+  ArchRProj = projBM4, 
+  useMatrix = "GeneScoreMatrix",
+  matrixName = "GeneIntegrationMatrix",
+  reducedDims = "Harmony",
+  seRNA = merged_RNA,
+  addToArrow = FALSE, 
+  groupList = groupList,
+  groupRNA = "clust_names",
+  nameCell = "predictedCell_Co",
+  nameGroup = "predictedGroup_Co",
+  nameScore = "predictedScore_Co"
+)
+
+
+pal <- paletteDiscrete(values = merged_RNA$clust_names)
+p1 <- plotEmbedding(
+  projBM4, 
+  colorBy = "cellColData", 
+  name = "predictedGroup_Un", 
+  pal = pal
+)
+p1
+p2 <- plotEmbedding(
+  projBM4, 
+  colorBy = "cellColData", 
+  name = "predictedGroup_Co", 
+  pal = pal
+)
+p2
+
+plotPDF(p1,p2, name = "Plot-UMAP-scRNA-Integration-PredictedUn-predictedCo.pdf", ArchRProj = projBM4, addDOC = FALSE, width = 5, height = 5)
+
+
+saveArchRProject(ArchRProj = projBM4, outputDirectory = "3_Save4-ProjBM4_scRNA_integrated", load = FALSE)
+
+# Add pseudo-scRNA data for each scATAC cell ------------------------------
+
+projBM5 <- addGeneIntegrationMatrix(
+  ArchRProj = projBM4, 
+  useMatrix = "GeneScoreMatrix",
+  matrixName = "GeneIntegrationMatrix",
+  reducedDims = "Harmony",
+  seRNA = merged_RNA,
+  addToArrow = TRUE,
+  force= TRUE,
+  groupList = groupList,
+  groupRNA = "clust_names",
+  nameCell = "predictedCell",
+  nameGroup = "predictedGroup",
+  nameScore = "predictedScore"
+)
+
+getAvailableMatrices(projBM5)
+projBM5 <- addImputeWeights(projBM5)
+
+markerGenes  <- c(
+  "CD34", #Early Progenitor
+  "GATA1", #Erythroid
+  "PAX5", "MS4A1", #B-Cell Trajectory
+  "CD14", #Monocytes
+  "CD3D", "CD8A", "TBX21", "IL7R" #TCells
+)
+
+markerGenes  <- c(
+  "CD34", #Early Progenitor
+  "GATA1", #Erythroid
+  "PAX5", "MS4A1", "EBF1", "MME", #B-Cell Trajectory
+  "CD14", "CEBPB", "MPO", #Monocytes
+  "IRF8", 
+  "CD3D", "CD8A", "TBX21", "IL7R" #TCells
+)
+
+p1 <- plotEmbedding(
+  ArchRProj = projBM5, 
+  colorBy = "GeneIntegrationMatrix", 
+  name = markerGenes, 
+  continuousSet = "horizonExtra",
+  embedding = "UMAPHarmony",
+  imputeWeights = getImputeWeights(projBM5)
+)
+
+
+p2 <- plotEmbedding(
+  ArchRProj = projBM5, 
+  colorBy = "GeneScoreMatrix", 
+  continuousSet = "horizonExtra",
+  name = markerGenes, 
+  embedding = "UMAPHarmony",
+  imputeWeights = getImputeWeights(projBM5)
+)
+
+
+
+p1c <- lapply(p1, function(x){
+  x + guides(color = FALSE, fill = FALSE) + 
+    theme_ArchR(baseSize = 6.5) +
+    theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+    theme(
+      axis.text.x=element_blank(), 
+      axis.ticks.x=element_blank(), 
+      axis.text.y=element_blank(), 
+      axis.ticks.y=element_blank()
+    )
+})
+
+p2c <- lapply(p2, function(x){
+  x + guides(color = FALSE, fill = FALSE) + 
+    theme_ArchR(baseSize = 6.5) +
+    theme(plot.margin = unit(c(0, 0, 0, 0), "cm")) +
+    theme(
+      axis.text.x=element_blank(), 
+      axis.ticks.x=element_blank(), 
+      axis.text.y=element_blank(), 
+      axis.ticks.y=element_blank()
+    )
+})
+
+do.call(cowplot::plot_grid, c(list(ncol = 3), p1c))
+do.call(cowplot::plot_grid, c(list(ncol = 3), p2c))
+
+plotPDF(plotList = p1, 
+        name = "Plot-UMAPHarmony-Marker-Genes-RNA-W-Imputation.pdf", 
+        ArchRProj = projBM5, 
+        addDOC = FALSE, width = 5, height = 5)
+
+cM <- confusionMatrix(projBM5$Clusters_harmony, projBM5$predictedGroup)
+cM
+labelOld <- rownames(cM)
+labelOld
+
+labelNew <- colnames(cM)[apply(cM, 1, which.max)]
+labelNew
+
+
+projBM5$Clusters_harmony2 <- mapLabels(projBM5$Clusters_harmony, newLabels = labelNew, oldLabels = labelOld)
+
+p1 <- plotEmbedding(projBM5, colorBy = "cellColData", name = "Clusters_harmony2")
+p1
+
+df <- getCellColData(projBM5)
+
+plotPDF(p1, name = "Plot-UMAPHarmony-Remap-Clusters_harmony2.pdf", ArchRProj = projBM5, addDOC = FALSE, width = 5, height = 5)
+
+saveArchRProject(ArchRProj = projBM5, outputDirectory = "3_Save5_ProjBM5_scRNA_integrated_clusters_remapped", load = FALSE)
+
+##get the number of cells per cluster
+projBM5 <- loadArchRProject(path = "3_Save5_ProjBM5_scRNA_integrated_clusters_remapped", force = FALSE, showLogo = TRUE)
+
+df <- getCellColData(projBM5)
+length(which(df$Clusters_harmony == "C1")) ##1172
+length(which(df$Clusters_harmony == "C2")) ##1733
+length(which(df$Clusters_harmony == "C3")) ##5041
+length(which(df$Clusters_harmony == "C4")) ##2942
+length(which(df$Clusters_harmony == "C5")) ##5750
+length(which(df$Clusters_harmony == "C6")) ##5052
+length(which(df$Clusters_harmony == "C7")) ##4436
+length(which(df$Clusters_harmony == "C8")) ##1292
+length(which(df$Clusters_harmony == "C9")) ##1876
+length(which(df$Clusters_harmony == "C10")) ##3798
+length(which(df$Clusters_harmony == "C11")) ##492
+length(which(df$Clusters_harmony == "C12")) ##2146
+length(which(df$Clusters_harmony == "C13")) ##473
+length(which(df$Clusters_harmony == "C14")) ##2653
+length(which(df$Clusters_harmony == "C15")) ##3886
+length(which(df$Clusters_harmony == "C16")) ##67
+length(which(df$Clusters_harmony == "C17")) ##1458
+length(which(df$Clusters_harmony == "C18")) ##2230
+length(which(df$Clusters_harmony == "C19")) ##560
+length(which(df$Clusters_harmony == "C20")) ##621
+length(which(df$Clusters_harmony == "C21")) ##1952
+length(which(df$Clusters_harmony == "C22")) ##5590
+length(which(df$Clusters_harmony == "C23")) ##962
+length(which(df$Clusters_harmony == "C24")) ##2806
