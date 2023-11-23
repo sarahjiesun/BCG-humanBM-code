@@ -1,0 +1,130 @@
+library(Signac)
+library(Seurat)
+library(GenomeInfoDb)
+library(EnsDb.Hsapiens.v75)
+library(ggplot2)
+library(patchwork)
+library(hdf5r)
+library(readr)
+library(data.table)
+
+set.seed(1234)
+
+OUT_DIR <- "donor_barcodes/"
+dir.create(OUT_DIR)
+
+batchNames_list <- c("capture1", "capture2", "capture3", "capture4", "capture5", "capture6", "capture7", "capture8", "capture9", "capture10", "capture11", "capture12", "capture13", "capture14")
+
+
+batchList <- readRDS(file=paste0("../projects_v2/Initial_processing_clustering_ATAC/vireo_test_outs/batchList.rds"))
+batchObjectList <- readRDS(file=paste0("../projects_v2/Initial_processing_clustering_ATAC/vireo_test_outs/batchObjectList.rds"))
+
+
+#Read in demuxlet data (demuxlet best files were converted to csv in excel)
+demuxlet_out_list <- c("capture1_demuxlet", "capture2_demuxlet", "capture3_demuxlet", "capture4_demuxlet", "capture5_demuxlet", "capture6_demuxlet", "capture7_demuxlet", "capture8_demuxlet", "capture9_demuxlet", "capture10_demuxlet", "capture11_demuxlet", "capture12_demuxlet", "capture13_demuxlet", "capture14_demuxlet")
+
+for (i in 1:length(demuxlet_out_list)){
+  
+  demuxlet_out <- demuxlet_out_list[i]
+  data <- read.csv(file=paste0("../projects_v1/Initial_processing_clustering_ATAC/demuxlet_csv_outs/",demuxlet_out,"_out.csv"), header=TRUE)
+  
+  assign(paste0(demuxlet_out), as.data.frame(data))
+}
+
+demuxlet_data_list <- list(capture1_demuxlet, capture2_demuxlet, capture3_demuxlet, capture4_demuxlet, capture5_demuxlet, capture6_demuxlet, capture7_demuxlet, capture8_demuxlet, capture9_demuxlet, capture10_demuxlet, capture11_demuxlet, capture12_demuxlet, capture13_demuxlet, capture14_demuxlet)
+
+
+demuxlet_class_percentages <- matrix(nrow = length(demuxlet_data_list), ncol = 7)
+
+
+#Filter cells to match demuxlet
+batch_cell_numbers <- matrix(nrow = length(batchNames_list), ncol = 3)
+for(i in 1:length(batchObjectList))
+{
+  batch <- batchNames_list[i]
+  demuxlet_data <- demuxlet_data_list[[i]]
+  batchObjectList[[i]]$temp <- row.names(batchObjectList[[i]]@meta.data)
+  #subset seurat object
+  batchObjectList[[i]]<- subset(
+    x = batchObjectList[[i]],
+    subset = temp %in% demuxlet_data$BARCODE
+  ) 
+  #subset demuxlet data
+  demuxlet_data_list[[i]] <- subset(demuxlet_data, demuxlet_data$BARCODE %in% batchObjectList[[i]]@meta.data$temp)
+  
+  batchObjectList[[i]]$temp <- NULL
+  batch_cell_numbers[i,] <- c(batch, dim(batchObjectList[[i]])[1], dim(batchObjectList[[i]])[2]) #Create a table with num_genes and num_cells for each capture
+}
+batch_cell_numbers <- as.data.frame(batch_cell_numbers)
+colnames(batch_cell_numbers) <- c("batchID","num_genes","num_cells")
+write.table(batch_cell_numbers, paste0(OUT_DIR, "number_cells_per_batch_unfiltered.txt"), quote = FALSE)
+
+
+for (i in 1:length(batchList)){
+  batch <- batchList[i]
+  ## add demuxlet data
+  demuxlet_data <- demuxlet_data_list[[i]]
+  demuxlet_data <- as.data.frame(demuxlet_data[c("BARCODE","BEST")])
+  rownames(demuxlet_data) <- demuxlet_data$BARCODE
+  demuxlet_data$BARCODE <- NULL
+  
+  ## check order
+  print(length(which(rownames(demuxlet_data)!=rownames(batchObjectList[[i]]@meta.data))))
+  batchObjectList[[i]] <- AddMetaData(batchObjectList[[i]], demuxlet_data)
+  
+  ## demuxlet doublets/singlets/unassigned
+  singlets <- 0
+  doublets <- 0
+  ambiguous <- 0
+  singlets_total <- 0
+  doublets_total <- 0
+  ambiguous_total <- 0
+  demuxlet_status <- vector(length=length(batchObjectList[[i]]@meta.data$BEST))
+  for (j in 1:length(batchObjectList[[i]]@meta.data$BEST))
+  {
+    if(grepl("SNG",batchObjectList[[i]]@meta.data$BEST[j])==TRUE)
+    {
+      singlets_total <- singlets_total + 1
+      demuxlet_status[j] <- "singlet"
+    }
+    if(grepl("DBL",batchObjectList[[i]]@meta.data$BEST[j])==TRUE)
+    {
+      doublets_total <- doublets_total + 1
+      demuxlet_status[j] <- "doublet"
+    }
+    if(grepl("AMB",batchObjectList[[i]]@meta.data$BEST[j])==TRUE)
+    {
+      ambiguous_total <- ambiguous_total + 1
+      demuxlet_status[j] <- "ambiguous"
+    }
+  }
+  batchObjectList[[i]]@meta.data$demuxlet_status <- demuxlet_status
+  singlets <- singlets_total/length(batchObjectList[[i]]@meta.data$BEST)
+  doublets <- doublets_total/length(batchObjectList[[i]]@meta.data$BEST)
+  ambiguous <- ambiguous_total/length(batchObjectList[[i]]@meta.data$BEST)
+  
+  print(singlets_total + doublets_total + ambiguous_total)
+  demuxlet_class_percentages[i,] <- c(batch, singlets, doublets, ambiguous, singlets_total, doublets_total, ambiguous_total)
+  
+  assign(paste0(batch,"_unfilt"), batchObjectList[[i]])
+  print(batch)
+  
+  #Subset out singlets
+  singlet_subset<- subset(
+    x = batchObjectList[[i]],
+    subset = demuxlet_status %in% "singlet"
+  )
+  #Get list of barcodes for each donor
+  
+  donors <- unique(singlet_subset$BEST)
+  for(j in 1:length(donors))
+  {
+    temp_subset<- subset(
+      x = singlet_subset,
+      subset = BEST %in% donors[j]
+    )
+    barcodes <- row.names(temp_subset@meta.data)
+    assign(paste0(batch, "_", donors[j]), barcodes)
+    saveRDS(barcodes, file=paste0(OUT_DIR, batch, "_", donors[j],"_barcodes.rds"))
+  }
+}
