@@ -1,0 +1,177 @@
+library(ArchR)
+addArchRThreads(threads = 16) 
+addArchRGenome("hg38")
+library(readr)
+library(harmony)
+library(Seurat)
+
+
+
+# iterative LSI -----------------------------------------------------------
+
+projBM2 <- addIterativeLSI(
+  ArchRProj = projBM1,
+  useMatrix = "TileMatrix", 
+  name = "IterativeLSI", 
+  iterations = 2, 
+  clusterParams = list( #See Seurat::FindClusters
+    resolution = c(0.2), 
+    sampleCells = 10000, 
+    n.start = 10
+  ), 
+  varFeatures = 25000, 
+  dimsToUse = 1:30
+)
+
+
+# Harmony -----------------------------------------------------------------
+
+projBM2 <- addHarmony(
+  ArchRProj = projBM2,
+  reducedDims = "IterativeLSI",
+  name = "Harmony",
+  groupBy = "Sample"
+)
+
+# Cluster cells using IterativeLSI -----------------------------------------------------------
+
+projBM2 <- addClusters(
+  input = projBM2,
+  reducedDims = "IterativeLSI",
+  method = "Seurat",
+  name = "Clusters",
+  resolution = 0.8
+)
+head(projBM2$Clusters)
+table(projBM2$Clusters)
+
+cM <- confusionMatrix(paste0(projBM2$Clusters), paste0(projBM2$Sample))
+cM
+
+library(pheatmap)
+cM <- cM / Matrix::rowSums(cM)
+p <- pheatmap::pheatmap(
+  mat = as.matrix(cM), 
+  color = paletteContinuous("whiteBlue"), 
+  border_color = "black"
+)
+p
+
+
+# UMAP iterativeLSI -------------------------------------------------------
+
+
+projBM2 <- addUMAP(
+  ArchRProj = projBM2, 
+  reducedDims = "IterativeLSI", 
+  name = "UMAP", 
+  nNeighbors = 30, 
+  minDist = 0.5, 
+  metric = "cosine"
+)
+p1 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Sample", embedding = "UMAP")
+p2 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Clusters", embedding = "UMAP")
+
+ggAlignPlots(p1, p2, type = "h")
+
+p3 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "timepoint", embedding = "UMAP")
+p3
+
+p4 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "vaccination", embedding = "UMAP")
+p4
+
+p5 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "donor", embedding = "UMAP")
+p5
+
+
+plotPDF(p1, name = "Plot-UMAP-Sample-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p2, name = "Plot-UMAP-Clusters-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p3, name = "Plot-UMAP-timepoint-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p4, name = "Plot-UMAP-vaccination-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p5, name = "Plot-UMAP-donor-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+
+
+# tSNE interativeLSI ------------------------------------------------------
+
+projBM2 <- addTSNE(
+  ArchRProj = projBM2, 
+  reducedDims = "IterativeLSI", 
+  name = "TSNE", 
+  perplexity = 30
+)
+
+p1 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Sample", embedding = "TSNE")
+p2 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Clusters", embedding = "TSNE")
+ggAlignPlots(p1, p2, type = "h")
+
+p3 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "timepoint", embedding = "TSNE")
+p3
+
+p4 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "vaccination", embedding = "TSNE")
+p4
+
+p5 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "donor", embedding = "TSNE")
+p5
+
+# Cluster cells using Harmony ---------------------------------------------
+
+projBM2 <- addClusters(
+  input = projBM2,
+  reducedDims = "Harmony",
+  method = "Seurat",
+  name = "Clusters_harmony",
+  resolution = 0.8
+)
+
+head(projBM2$Clusters_harmony)
+table(projBM2$Clusters_harmony)
+
+cM <- confusionMatrix(paste0(projBM2$Clusters_harmony), paste0(projBM2$Sample))
+cM
+
+library(pheatmap)
+cM <- cM / Matrix::rowSums(cM)
+p <- pheatmap::pheatmap(
+  mat = as.matrix(cM), 
+  color = paletteContinuous("whiteBlue"), 
+  border_color = "black"
+)
+p
+
+
+# UMAP harmony ------------------------------------------------------------
+
+projBM2 <- addUMAP(
+  ArchRProj = projBM2, 
+  reducedDims = "Harmony", 
+  name = "UMAPHarmony", 
+  nNeighbors = 30, 
+  minDist = 0.5, 
+  metric = "cosine"
+)
+
+p1 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Sample", embedding = "UMAPHarmony")
+p2 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "Clusters_harmony", embedding = "UMAPHarmony")
+
+ggAlignPlots(p1, p2, type = "h")
+
+p3 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "timepoint", embedding = "UMAPHarmony")
+p3
+
+p4 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "vaccination", embedding = "UMAPHarmony")
+p4
+
+p5 <- plotEmbedding(ArchRProj = projBM2, colorBy = "cellColData", name = "donor", embedding = "UMAPHarmony")
+p5
+
+plotPDF(p1, name = "Plot-UMAPHarmony-Sample-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p2, name = "Plot-UMAPHarmony-Clusters_harmony-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p3, name = "Plot-UMAPHarmony-timepoint-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p4, name = "Plot-UMAPHarmony-vaccination-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+plotPDF(p5, name = "Plot-UMAPHarmony-donor-iterativeLSI.pdf", ArchRProj = projBM2, addDOC = FALSE, width = 5, height = 5)
+
+
+# Save ArchRProject -------------------------------------------------------
+
+#load=FALSE means that new changes are NOT added to the saved project
+saveArchRProject(ArchRProj = projBM2, outputDirectory = "1_Save2-ProjBM2_LSI_clusters", load = FALSE)
