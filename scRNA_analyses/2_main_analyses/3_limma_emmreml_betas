@@ -1,0 +1,191 @@
+.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+library(ggplot2)
+library (DESeq2)
+library(statmod)
+library(RColorBrewer)
+library(edgeR)
+library(devtools)
+library(cluster)
+library(ggrepel)
+library(EMMREML)
+library(ggpointdensity)
+library(ashr)
+library(mashr)
+library(dplyr)
+library(rje)
+
+setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+OUT_DIR <- "MASH/"
+dir.create(OUT_DIR)
+
+################################################
+###   do not include unknown1 or unknown2    ###
+################################################
+
+# read in results for each cluster ----------------------------------------
+
+clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
+
+genes_common <- vector()
+for(i in 1:length(clusters)){
+  
+  name <- clusters[i]
+  dat <- read.csv(file=paste0("emmreml_betas/", name, "_res_full.csv"))
+  if(i == 1)
+  {
+    genes_common <- dat$X
+  }
+  else
+  {
+    genes_common <- intersect(genes_common, dat$X)
+  }
+  assign(paste0(name,"_res"), dat)
+}
+
+results <- list(HSC_a_res, HSC_b_res, CMP_a_res, CMP_b_res, CMP_c_res, GMP_b1_res, GMP_b2_res, MEP_a1_res, MEP_a2_res, MEP_a3_res, mixed_a_res, mixed_b_res, PreBNK_res)
+
+
+# make table of betas and standard errors -----------------------------------------------------
+
+for(i in 1:length(results)){
+  
+  name <- clusters[i]
+  dat <- results[[i]]
+  dat_subset <- subset(dat, dat$X %in% genes_common)
+  print(which(dat_subset$X != genes_common))
+  assign(paste0(name, "_subset"), dat_subset)
+}
+
+
+beta_table <- cbind(HSC_a_subset$beta_groupBCG.timepoint, HSC_b_subset$beta_groupBCG.timepoint, CMP_a_subset$beta_groupBCG.timepoint, CMP_b_subset$beta_groupBCG.timepoint, CMP_c_subset$beta_groupBCG.timepoint,
+                    GMP_b1_subset$beta_groupBCG.timepoint, GMP_b2_subset$beta_groupBCG.timepoint, MEP_a1_subset$beta_groupBCG.timepoint, MEP_a2_subset$beta_groupBCG.timepoint,
+                    MEP_a3_subset$beta_groupBCG.timepoint, mixed_a_subset$beta_groupBCG.timepoint, mixed_b_subset$beta_groupBCG.timepoint, PreBNK_subset$beta_groupBCG.timepoint)
+colnames(beta_table) <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
+row.names(beta_table) <- genes_common
+
+
+SE_table <- cbind(sqrt(HSC_a_subset$sdev_groupBCG.timepoint), sqrt(HSC_b_subset$sdev_groupBCG.timepoint), sqrt(CMP_a_subset$sdev_groupBCG.timepoint), sqrt(CMP_b_subset$sdev_groupBCG.timepoint), sqrt(CMP_c_subset$sdev_groupBCG.timepoint),
+                  sqrt(GMP_b1_subset$sdev_groupBCG.timepoint), sqrt(GMP_b2_subset$sdev_groupBCG.timepoint), sqrt(MEP_a1_subset$sdev_groupBCG.timepoint), sqrt(MEP_a2_subset$sdev_groupBCG.timepoint),
+                  sqrt(MEP_a3_subset$sdev_groupBCG.timepoint), sqrt(mixed_a_subset$sdev_groupBCG.timepoint), sqrt(mixed_b_subset$sdev_groupBCG.timepoint), sqrt(PreBNK_subset$sdev_groupBCG.timepoint))
+colnames(SE_table) <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
+row.names(SE_table) <- genes_common
+
+
+
+
+
+# Run MASH without correlations with custom matrices ----------------------------------------------------------------
+data = mash_set_data(beta_table, SE_table)
+
+#set up data driven covariance matrices
+m.1by1 = mash_1by1(data)
+strong = get_significant_results(m.1by1,0.05)
+U.pca = cov_pca(data,5,subset=strong)
+print(names(U.pca))
+U.ed = cov_ed(data, U.pca, subset=strong)
+
+#canonical covariance matrix
+U.c = cov_canonical(data)
+print(names(U.c))
+
+#make custom matrices
+true.mat <- matrix(0, length(colnames(beta_table)), length(colnames(beta_table)))
+colnames(true.mat) <- c("HSC", "HSC", "CMP", "CMP", "CMP", "GMP", "GMP", "MEP", "MEP", "MEP", "mixed", "mixed", "PreBNK")
+row.names(true.mat) <- c("HSC1", "HSC2", "CMP1", "CMP2", "CMP3", "GMP1", "GMP2", "MEP1", "MEP2", "MEP3", "mixed1", "mixed2", "PreBNK1")
+
+true.HSC <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  
+  name <- colnames(true.mat)[i]
+  if(name == "HSC")
+  {
+    true.HSC[i,which(row.names(true.mat) %in% c("HSC1", "HSC2"))] <- 1
+  }
+}
+
+true.CMP <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  name <- colnames(true.mat)[i]
+  if(name == "CMP")
+  {
+    true.CMP[i,which(row.names(true.mat) %in% c("CMP1", "CMP2", "CMP3"))] <- 1
+  }
+}
+
+true.GMP <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  name <- colnames(true.mat)[i]
+  if(name == "GMP")
+  {
+    true.GMP[i,which(row.names(true.mat) %in% c("GMP1", "GMP2"))] <- 1
+  }
+}
+
+true.MEP <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  name <- colnames(true.mat)[i]
+  if(name == "MEP")
+  {
+    true.MEP[i,which(row.names(true.mat) %in% c("MEP1", "MEP2", "MEP3"))] <- 1
+  }
+}
+
+true.mixed <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  name <- colnames(true.mat)[i]
+  if(name == "mixed")
+  {
+    true.mixed[i,which(row.names(true.mat) %in% c("mixed1", "mixed2"))] <- 1
+  }
+}
+
+true.preBNK <- true.mat
+for(i in 1:length(colnames(true.mat))){
+  name <- colnames(true.mat)[i]
+  if(name == "PreBNK")
+  {
+    true.preBNK[i,which(row.names(true.mat) %in% c("PreBNK1"))] <- 1
+  }
+}
+
+
+U.true  = list(true.HSC=true.HSC, true.CMP=true.CMP, true.GMP=true.GMP, true.MEP=true.MEP, true.mixed=true.mixed, true.preBNK=true.preBNK)
+
+
+#mash
+m = mash(data, c(U.c,U.ed,U.true))
+
+
+get_significant_results(m)
+print(length(get_significant_results(m)))
+
+
+## write posterior outs
+write.table(get_lfsr(m), paste0(OUT_DIR,"mash_results/lfsr_wcustom_output.txt"), quote = FALSE)
+write.table(get_pm(m), paste0(OUT_DIR, "mash_results/posteriorMeans_wcustom.txt"), quote = FALSE)
+write.table(get_psd(m), paste0(OUT_DIR, "mash_results/posteriorStandardDevs_wcustom.txt"), quote = FALSE)
+
+
+
+## format lfsr table to include only genes with lfsr < 0.1 in at least one cell type
+
+lfsr_formatted <- data.frame(read.table("MASH/mash_results/lfsr_wcustom_output.txt"))
+lfsr_formatted_final <- lfsr_formatted[which(rowMins(lfsr_formatted) <= 0.1),]
+
+## convert column names 
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "HSC_a")] <- "HSC c1"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "HSC_b")] <- "HSC c2"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "CMP_a")] <- "CMP c1"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "CMP_b")] <- "CMP c2"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "CMP_c")] <- "CMP c3"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "GMP_b1")] <- "GMP c1"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "GMP_b2")] <- "GMP c2"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "MEP_a1")] <- "MEP c1"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "MEP_a2")] <- "MEP c2"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "MEP_a3")] <- "MEP c3"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "mixed_a")] <- "MLP c1"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "mixed_b")] <- "MLP c2"
+colnames(lfsr_formatted_final)[which(colnames(lfsr_formatted_final)== "PreBNK")] <- "PreBNK"
+
+
+write.csv(lfsr_formatted_final, file=paste0("MASH/tables_paper/Table2.csv")) 
