@@ -1,0 +1,47 @@
+
+##RUN this code noninteractively with R on bigmem2 (NOT lbarreiro)
+library(ArchR)
+addArchRThreads(threads = 16) 
+addArchRGenome("hg38")
+library(readr)
+
+setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR_v1/")
+
+batchNames_list <- c("capture1", "capture2", "capture3", "capture4", "capture5", "capture6", "capture7", "capture8", "capture9", "capture10", "capture11", "capture12", "capture13", "capture14")
+barcodes_cap1 <- c("S19-CD34neg_S18", "S8-CD34neg_S7")
+barcodes_cap2 <- c("S8-CD34neg_S7", "S9-CD34neg_S8")
+barcodes_cap3 <- c("S20-CD34neg_S19", "S15-CD34neg_S14")
+barcodes_cap4 <- c("S20-CD34neg_S19", "S15-CD34neg_S14")
+barcodes_cap5 <- c("S21-CD34neg_S20", "S13-CD34neg_S12", "S16-CD34neg_S15")
+barcodes_cap6 <- c("S21-CD34neg_S20", "S13-CD34neg_S12", "S16-CD34neg_S15")
+barcodes_cap7 <- c("S5-CD34neg_S4", "S6-CD34neg_S5", "S7-CD34neg_S6")
+barcodes_cap8 <- c("S5-CD34neg_S4", "S6-CD34neg_S5", "S7-CD34neg_S6")
+barcodes_cap9 <- c("S10-CD34neg_S9", "S11-CD34neg_S10", "S1-CD34neg_S1")
+barcodes_cap10 <- c("S10-CD34neg_S9", "S11-CD34neg_S10", "S1-CD34neg_S1")
+barcodes_cap11 <- c("S12-CD34neg_S11", "S2-CD34neg_S2", "S3-CD34neg_S3")
+barcodes_cap12 <- c("S12-CD34neg_S11", "S2-CD34neg_S2", "S3-CD34neg_S3")
+barcodes_cap13 <- c("S14-CD34neg_S13", "S17-CD34neg_S16", "S18-CD34neg_S17")
+barcodes_cap14 <- c("S14-CD34neg_S13", "S17-CD34neg_S16", "S18-CD34neg_S17")
+barcodes_cap_list <- list(barcodes_cap1, barcodes_cap2, barcodes_cap3, barcodes_cap4, barcodes_cap5, barcodes_cap6, barcodes_cap7, barcodes_cap8, barcodes_cap9, barcodes_cap10, barcodes_cap11, barcodes_cap12, barcodes_cap13, barcodes_cap14)
+
+for(i in 1:length(batchNames_list))
+{
+  batch <- batchNames_list[i]
+  frag_file = paste0("../../",batch,"_output/outs/fragments.tsv.gz")
+  for(j in 1:length(barcodes_cap_list[[i]]))
+  {
+    barcodes_cap <- barcodes_cap_list[[i]]
+    barcodes <- readRDS(file=paste0("donor_barcodes/", batch, "_SNG-LB-SS-1S-RS-", barcodes_cap[j], "_R1_001_barcodes.rds"))
+
+    ArrowFiles <- createArrowFiles(
+    inputFiles = frag_file,
+    sampleNames = paste0(batch, "_", barcodes_cap[j]),
+    validBarcodes = barcodes,
+    minTSS = 4, #Dont set this too high because you can always increase later
+    minFrags = 1000, 
+    addTileMat = TRUE,
+    addGeneScoreMat = TRUE,
+    logFile = paste0("make_arrow_log_files/", batch,"_", barcodes_cap[j], "_log"))
+  }
+  print(i)
+}
