@@ -1,0 +1,178 @@
+
+
+#R version 4.1.0 loaded
+#rstudio/1.4
+#geos/3.9.1 loaded
+#hdf5/1.12.0 loaded 
+#cmake loaded
+
+.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+
+library(ggplot2)
+library (DESeq2)
+library(statmod)
+library(RColorBrewer)
+library(edgeR)
+library(devtools)
+library(cluster)
+library(ggrepel)
+library(EMMREML)
+library(ggpointdensity)
+library(dplyr)
+library(stringr)
+library(textTinyR)
+library(pbapply)
+library(readr)
+library(data.table)
+library(plyr)
+
+setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/")
+
+OUT_DIR <- c("MASH_emmreml_downstream/DE_overlapping_TFs/")
+dir.create(OUT_DIR)
+
+
+
+# Read in MASH results without correlations with custom matrices ----------------------------------------------------
+
+PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+
+#check that genes are in the same order
+which(row.names(PM) != row.names(lfsr))
+
+
+# Read in TF motif data ---------------------------------------------------
+
+TF_motif_data <- read.csv(file=paste0("TF_cluster_information.csv"))
+motif_name <- TF_motif_data$TF.motif
+str_sub(motif_name, start = 1, end = 9, omit_na = FALSE) <- ""
+
+clusters <- colnames(PM)
+
+
+# lfsr <= 0.1 -------------------------------------------------------------
+
+for(i in 1:length(clusters)){
+  sig_genes <- vector(length=length(row.names(lfsr)))
+  gene_TF <- vector(length=length(row.names(lfsr)))
+  combined_lab <- vector(length=length(row.names(lfsr)))
+  numeric_lab <- vector(length=length(row.names(lfsr)))
+  
+  sig_genes[which(lfsr[paste0(clusters[i])] <= 0.1)] <- "sig"
+  gene_TF[which(row.names(lfsr) %in% motif_name)] <- "TF"
+  combined_lab <- paste0(sig_genes, "_", gene_TF)
+  numeric_lab <- rep("0", length(combined_lab))
+  numeric_lab[which(combined_lab == "sig_TF")] <- "1"
+  
+  assign(paste0(clusters[i],"_lab"), combined_lab)
+  assign(paste0(clusters[i],"_nlab"), numeric_lab)
+}
+
+df <- cbind(HSC_a_nlab, HSC_b_nlab, CMP_a_nlab, CMP_b_nlab, CMP_c_nlab, GMP_b1_nlab, GMP_b2_nlab, MEP_a1_nlab, MEP_a2_nlab, MEP_a3_nlab, mixed_a_nlab, mixed_b_nlab, PreBNK_nlab)
+row.names(df) <- row.names(lfsr)
+colnames(df) <- c("HSC_c1", "HSC_c2", "CMP_c1", "CMP_c2", "CMP_c3", 'GMP_c1', "GMP_c2", "MEP_c1", "MEP_c2", "MEP_c3", "MLP_c1", "MLP_c2", "PreBNK")
+count <- rowSums(df == "1")
+
+df_subset <- data.frame(subset(df, row.names(df) %in% row.names(df)[which(count > 0)]))
+colnames(df_subset) <- c("HSC_c1", "HSC_c2", "CMP_c1", "CMP_c2", "CMP_c3", 'GMP_c1', "GMP_c2", "MEP_c1", "MEP_c2", "MEP_c3", "MLP_c1", "MLP_c2", "PreBNK")
+## Bubble plot with lfsr and PM values
+
+lfsr_subset <- lfsr[which(row.names(lfsr) %in% row.names(df_subset)),]
+colnames(lfsr_subset) <- c("HSC_c1", "HSC_c2", "CMP_c1", "CMP_c2", "CMP_c3", 'GMP_c1', "GMP_c2", "MEP_c1", "MEP_c2", "MEP_c3", "MLP_c1", "MLP_c2", "PreBNK")
+PM_subset <- PM[which(row.names(PM) %in% row.names(df_subset)),]
+colnames(PM_subset) <- c("HSC_c1", "HSC_c2", "CMP_c1", "CMP_c2", "CMP_c3", 'GMP_c1', "GMP_c2", "MEP_c1", "MEP_c2", "MEP_c3", "MLP_c1", "MLP_c2", "PreBNK")
+
+which(row.names(lfsr_subset) != row.names(df_subset))
+
+for(i in 1:length(colnames(lfsr_subset))){
+  lfsr_temp <- lfsr_subset[, colnames(lfsr_subset)[i]] 
+  lfsr_temp[which(df_subset[, colnames(lfsr_subset)[i]] == 0)] <- 0
+  
+  PM_temp <- PM_subset[, colnames(lfsr_subset)[i]] 
+  PM_temp[which(PM_temp > 0)] <- "pos"
+  PM_temp[which(PM_temp < 0)] <- "neg"
+  PM_temp[which(lfsr_temp == 0)] <- "not_sig"
+  
+  assign(paste0(colnames(lfsr_subset)[i],"_lfsr"), -log10(lfsr_temp))
+  assign(paste0(colnames(lfsr_subset)[i],"_PM"), PM_temp)
+}
+
+df_bubble_0.1 <- data.frame(
+  celltype <- rep(c("HSC c1", "HSC c2", "CMP c1", "CMP c2", "CMP c3", 'GMP c1', "GMP c2", "MEP c1", "MEP c2", "MEP c3", "MLP c1", "MLP c2", "PreBNK"), each=length(row.names(df_subset))),
+  TF_name <- rep(row.names(df_subset), length(colnames(df_subset))),
+  lfsr_val <- c(HSC_c1_lfsr, HSC_c2_lfsr, CMP_c1_lfsr, CMP_c2_lfsr, CMP_c3_lfsr, GMP_c1_lfsr, GMP_c2_lfsr, MEP_c1_lfsr,
+                MEP_c2_lfsr, MEP_c3_lfsr, MLP_c1_lfsr, MLP_c2_lfsr, PreBNK_lfsr),
+  PM_val <- c(HSC_c1_PM, HSC_c2_PM, CMP_c1_PM, CMP_c2_PM, CMP_c3_PM, GMP_c1_PM, GMP_c2_PM, MEP_c1_PM,
+              MEP_c2_PM, MEP_c3_PM, MLP_c1_PM, MLP_c2_PM, PreBNK_PM),
+  val <- c(df_subset$HSC_c1, df_subset$HSC_c2, df_subset$CMP_c1, df_subset$CMP_c2, df_subset$CMP_c3, df_subset$GMP_c1, df_subset$GMP_c2, df_subset$MEP_c1,
+           df_subset$MEP_c2, df_subset$MEP_c3, df_subset$MLP_c1, df_subset$MLP_c2, df_subset$PreBNK)
+)
+colnames(df_bubble_0.1) <- c("celltype", "TF_name", "lfsr_val", "PM_val", "val")
+df_bubble_0.1$celltype <- factor(df_bubble_0.1$celltype, c("HSC c1", "HSC c2", "CMP c1", "CMP c2", "CMP c3", 'GMP c1', "GMP c2", "MEP c1", "MEP c2", "MEP c3", "MLP c1", "MLP c2", "PreBNK"))
+df_bubble_0.1$PM_val <- factor(df_bubble_0.1$PM_val, c("neg", 'not_sig', "pos"))
+df_bubble_0.1$lfsr_val[which(is.infinite(df_bubble_0.1$lfsr_val) == TRUE)] <- 0
+write.csv(df_bubble_0.1, file=paste0(OUT_DIR, "TF_exp_FULL_data.csv"))
+
+tiff(paste0(OUT_DIR,"TF_diff_exp_0.1_bubble.tiff"), units="in", width=3.7, height=6, res=300)
+ggplot(df_bubble_0.1, aes(x=celltype, y=TF_name)) + geom_point(shape=21, aes(fill=PM_val, color=val, size=lfsr_val)) + theme_classic() +
+  scale_fill_manual(values=c("#A5EDFF","white", "#E51932")) + scale_color_manual(values=c("white", "black")) + theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1, size=8))+
+  theme(axis.text.y = element_text(size=8)) +  labs(x="", y='Transcription factor', val="", PM_val="")  +
+  scale_size_continuous (range = c (0, 6))
+dev.off()
+
+
+
+## bubble plot
+
+df_bubble_0.1 <- data.frame(
+  celltype <- rep(colnames(df_subset), each=length(row.names(df_subset))),
+  TF_name <- rep(row.names(df_subset), length(colnames(df_subset))),
+  val <- c(df_subset$HSC_a, df_subset$HSC_b, df_subset$CMP_a, df_subset$CMP_b, df_subset$CMP_c, df_subset$GMP_b1, df_subset$GMP_b2, df_subset$MEP_a,
+           df_subset$MEP_b, df_subset$MEP_c, df_subset$MLP_a, df_subset$MLP_b, df_subset$PreBNK)
+)
+colnames(df_bubble_0.1) <- c("celltype", "TF_name", "val")
+df_bubble_0.1$celltype <- factor(df_bubble_0.1$celltype, c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", 'GMP_b1', "GMP_b2", "MEP_a", "MEP_b", "MEP_c", "MLP_a", "MLP_b", "PreBNK"))
+
+ggplot(df_bubble_0.1, aes(x=celltype, y=TF_name)) + geom_point(shape=21, aes(fill=val, color=val)) + theme_classic() +
+  scale_fill_manual(values=c("white", "red")) + scale_color_manual(values=c("white", "black")) + theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1, size=8))+
+  theme(axis.text.y = element_text(size=8)) + theme(legend.position="none") + labs(x="", y='Transcription factor')
+
+
+## lfsr <= 0.05
+for(i in 1:length(clusters)){
+  sig_genes <- vector(length=length(row.names(lfsr)))
+  gene_TF <- vector(length=length(row.names(lfsr)))
+  combined_lab <- vector(length=length(row.names(lfsr)))
+  
+  sig_genes[which(lfsr[paste0(clusters[i])] <= 0.05)] <- "sig"
+  gene_TF[which(row.names(lfsr) %in% motif_name)] <- "TF"
+  combined_lab <- paste0(sig_genes, "_", gene_TF)
+  assign(paste0(clusters[i],"_lab"), combined_lab)
+}
+
+df <- cbind(HSC_a_lab, HSC_b_lab, CMP_a_lab, CMP_b_lab, CMP_c_lab, GMP_b1_lab, GMP_b2_lab, MEP_a1_lab, MEP_a2_lab, MEP_a3_lab, mixed_a_lab, mixed_b_lab, PreBNK_lab)
+row.names(df) <- row.names(lfsr)
+count <- rowSums(df == "sig_TF")
+
+df_subset <- subset(df, row.names(df) %in% row.names(df)[which(count > 0)])
+
+
+
+## lfsr <= 0.01
+for(i in 1:length(clusters)){
+  sig_genes <- vector(length=length(row.names(lfsr)))
+  gene_TF <- vector(length=length(row.names(lfsr)))
+  combined_lab <- vector(length=length(row.names(lfsr)))
+  
+  sig_genes[which(lfsr[paste0(clusters[i])] <= 0.01)] <- "sig"
+  gene_TF[which(row.names(lfsr) %in% motif_name)] <- "TF"
+  combined_lab <- paste0(sig_genes, "_", gene_TF)
+  assign(paste0(clusters[i],"_lab"), combined_lab)
+}
+
+df <- cbind(HSC_a_lab, HSC_b_lab, CMP_a_lab, CMP_b_lab, CMP_c_lab, GMP_b1_lab, GMP_b2_lab, MEP_a1_lab, MEP_a2_lab, MEP_a3_lab, mixed_a_lab, mixed_b_lab, PreBNK_lab)
+row.names(df) <- row.names(lfsr)
+count <- rowSums(df == "sig_TF")
+
+df_subset <- subset(df, row.names(df) %in% row.names(df)[which(count > 0)])
