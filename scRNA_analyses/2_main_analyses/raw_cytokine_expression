@@ -14,14 +14,15 @@ library(qvalue)
 library(matrixStats)
 
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+setwd("/scRNA_analyses/2_main_analyses/")
 OUT_DIR <- "raw_cytokine_expression_outs/"
-#dir.create(OUT_DIR)
+dir.create(OUT_DIR)
 
-#omit unknown1 and unknown2
+
+# omit unknown1 and unknown2 ---------------------------------------
 clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
 
-## read in logCPM expression data
+# read in logCPM expression data -----------------------------------------
 for(i in 1:length(clusters)){
   cpm  <- as.matrix(read.table(file=paste0("emmreml_betas/raw_expression/",clusters[i],"_raw_expression.txt")))
   vals <- rowMedians(cpm)
@@ -32,16 +33,19 @@ median_vals_list <- list(HSC_a_vals, HSC_b_vals, CMP_a_vals, CMP_b_vals, CMP_c_v
 clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_a", "GMP_b", "MEP_a", "MEP_b", "MEP_c", "MLP_a", "MLP_b", "PreBNK")
 clusters_new <- c("HSC c1", "HSC c2", "CMP c1", "CMP c2", "CMP c3", "GMP c1", "GMP c2", "MEP c1", "MEP c2", "MEP c3", "MLP c1", "MLP c2", "PreBNK")
 
+
+# Create a vector of median expression (across individuals) for each gene in each cluster -------------------------------------------
 medians <- vector()
 gene_name <- vector()
 cluster_name <- vector()
 for(i in 1:length(median_vals_list)){
-  
   medians <- append(medians, as.numeric(median_vals_list[[i]]))
   gene_name <- append(gene_name, names(median_vals_list[[i]]))
   cluster_name <- append(cluster_name, rep(clusters_new[i], length(median_vals_list[[i]])))
 }
 
+
+# Create labels vector with cytokines of interest ----------------------------------------------------
 lab <- rep("", length(gene_name))
 lab[which(gene_name == "IL6")] <- "IL6"
 lab[which(gene_name == "IL3")] <- "IL3"
@@ -74,6 +78,7 @@ df_il2 <- df[df$label=="IL2",]
 df_il12 <- df[df$label=="IL12",]
 
 
+# Plot the results -------------------------------------------------
 tiff(paste0(OUT_DIR,"cytokine_raw_expression.tiff"), units="in", width=7, height=5, res=300)
 ggplot() + theme_classic() + labs(x="", y="Median log2CPM across samples") + geom_jitter(data=df, aes(x=cluster, y=median), alpha=0.4, color="grey") + geom_jitter(data=df_il6, aes(x=cluster, y=median),alpha=1,shape=21, fill="#3366CC", size=2.5)+
   geom_jitter(data=df_il3, aes(x=cluster, y=median),alpha=1,shape=21, fill="#DC3912", size=2.5) + geom_jitter(data=df_il1b, aes(x=cluster, y=median),alpha=1,shape=21, fill="#FF9900", size=2.5) + geom_jitter(data=df_tnf, aes(x=cluster, y=median),alpha=1,shape=21, fill="#109618", size=2.5) +
