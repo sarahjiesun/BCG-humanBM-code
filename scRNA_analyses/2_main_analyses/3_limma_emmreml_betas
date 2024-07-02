@@ -1,6 +1,5 @@
 #R version 4.1.0
 #install.packages("EMMREML")
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -13,13 +12,13 @@ library(EMMREML)
 library(qvalue)
 
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+setwd("/scRNA_analyses/2_main_analyses/")
 OUT_DIR <- paste0("emmreml_betas/")
-#dir.create(OUT_DIR)
+dir.create(OUT_DIR)
 
 
 # Setup -------------------------------------------------------------------
-filter_20_list <- readRDS(file=paste0("../Analysis12_label_transfer_emmreml_edited/label_transfer/filter_20_list.rds"))
+filter_20_list <- readRDS(file=paste0("label_transfer/filter_20_list.rds"))
 names(filter_20_list) <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK", "unknown1", "unknown2")
 
 #omit unknown1 and unknown2
@@ -36,7 +35,6 @@ threshold <- 0
 
 expression_threshold=1
 for(i in 1:length(clusters)){
-
     name <- clusters[i]
     {
     print("############")
@@ -45,8 +43,8 @@ for(i in 1:length(clusters)){
     }
     
     #### 1. Read and format pseudobulk data & meta_data
-    pseudobulk <- readRDS(file = paste0("../Analysis12_label_transfer_emmreml_edited/pseudobulk/",name,"_pseudobulk.rds"))
-    meta_data <- read.csv(file="../Analysis12_label_transfer_emmreml_edited/all_samples_meta_data_emmreml.csv", header=TRUE)
+    pseudobulk <- readRDS(file = paste0("pseudobulk/",name,"_pseudobulk.rds"))
+    meta_data <- read.csv(file="all_samples_meta_data_emmreml.csv", header=TRUE)
     meta_data$detailed_group=paste0(meta_data$group,"_",meta_data$timepoint)
     meta_data$group=factor(meta_data$group,levels=c("CTL","BCG"))
 
@@ -86,8 +84,8 @@ for(i in 1:length(clusters)){
     ## Check orders of elements match
     print(paste("Number of incongruent elements before filteirng steps",length(which(colnames(pseudobulk)!=rownames(meta_data)))))
 
-    
-    #### 4. Filter out undesired (lowly expressed) genes: I change the strategy of filtering, keeping genes above threshold in @ least 1 detailed group (CTL_0, CTL_1, BCG_0 or BCG_1)
+
+    #### 4. Filter out undesired (lowly expressed) genes: keeping genes above threshold in @ least 1 detailed group (CTL_0, CTL_1, BCG_0 or BCG_1)
     
     y <- DGEList(pseudobulk)
     y <- calcNormFactors(y)
@@ -179,13 +177,14 @@ for(i in 1:length(clusters)){
     DE_0.1_genes_count_qST[i]=length(which(qvalues<0.1))
 
     num_genes[i] <- length(row.names(res_full))
-    
     which(row.names(v$E) != row.names(res_full))
+
+    # Removal of timepoint effect and baseline differences between CTL and BCG prior to vaccination ------------------------------
     corrected_exp <- v$E - res_full[,"beta_timepoint"]%*%t(design[,"timepoint"]) - res_full[,"beta_groupBCG"]%*%t(design[,"groupBCG"]) 
-    write.csv(corrected_exp, file=paste0(OUT_DIR,"raw_expression_corrected/",name,"_corrected_expression.csv"))
-    
+    write.csv(corrected_exp, file=paste0(OUT_DIR,"raw_expression_corrected/",name,"_corrected_expression.csv")) 
     
 }
+
 
 DE_genes_count <- cbind(num_genes, DE_genes_count_pval, DE_genes_count_qBH, DE_genes_count_qST, DE_0.1_genes_count_pval, DE_0.1_genes_count_qBH,DE_0.1_genes_count_qST)
 row.names(DE_genes_count) <- clusters
