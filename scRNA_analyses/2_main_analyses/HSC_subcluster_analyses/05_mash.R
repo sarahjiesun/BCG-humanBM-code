@@ -66,38 +66,6 @@ colnames(SE_table) <- c("c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8")
 row.names(SE_table) <- genes_common
 
 
-
-# Run MASH with correlations ----------------------------------------------
-data = mash_set_data(beta_table, SE_table)
-
-# estimate null correlations and add to data (decreases number of false positive from my test)
-V = estimate_null_correlation_simple(data)
-data_V = mash_update_data(data, V = V)
-
-#set up data driven covariance matrices
-m.1by1 = mash_1by1(data_V)
-strong = get_significant_results(m.1by1,0.05)
-U.pca = cov_pca(data_V,5,subset=strong)
-print(names(U.pca))
-U.ed = cov_ed(data_V, U.pca, subset=strong)
-
-#canonical covariance matrix
-U.c = cov_canonical(data_V)
-print(names(U.c))
-
-#mash
-m_corr   = mash(data_V, c(U.c,U.ed))
-
-get_significant_results(m_corr)
-print(length(get_significant_results(m_corr)))
-
-## write posterior outs
-write.table(get_lfsr(m_corr), paste0(OUT_DIR,"mash_results/lfsr_wcorrelations_output.txt"), quote = FALSE)
-write.table(get_pm(m_corr), paste0(OUT_DIR, "mash_results/posteriorMeans_wcorrelations.txt"), quote = FALSE)
-write.table(get_psd(m_corr), paste0(OUT_DIR, "mash_results/posteriorStandardDevs_wcorrelations.txt"), quote = FALSE)
-
-
-
 # Run MASH without correlations ----------------------------------------------------------------
 data = mash_set_data(beta_table, SE_table)
 
