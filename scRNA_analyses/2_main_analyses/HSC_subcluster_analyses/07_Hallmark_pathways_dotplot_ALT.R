@@ -23,6 +23,11 @@ library(grid)
 library(gridExtra)
 library(Seurat)
 
+# Here we make a scatterplot that correlates HSC subcluster MPP score with gsea pathway enrichments 
+# gsea pathways are classified on a spectrum from HSC specific to universal depending on whether they were enriched only in HSCs or in the majority of 
+HSPC clusters 
+# We show that universally shared pathways are primarily enriched within the MPP-like subtypes of HSCs 
+
 
 # setup ----------------------------------------------------------------
 setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/")
@@ -38,20 +43,20 @@ target_pathways <- c("HALLMARK_OXIDATIVE_PHOSPHORYLATION", "HALLMARK_TNFA_SIGNAL
 
 MPP_data <- read.csv(file="MPP_cluster_data.csv")
 
+
+# subset out pathways that are target pathways --------------------------
+# "Target pathways" are those that were significant within at least one cluster of the HSPC gsea analysis (see Fig 2C of the paper)
 for(i in 1:length(clusters)){
-  dat <- data.frame(read.csv(file=paste0("HSC_subcluster_analysis/9_gsea/NOT_SORTED_gsea_result_",clusters[i],"_no_correlations")))
+  dat <- data.frame(read.csv(file=paste0("9_gsea/NOT_SORTED_gsea_result_",clusters[i],"_no_correlations")))
   dat_subset <- dat[which(dat$pathways %in% target_pathways),]
   names <- dat_subset$pathways
   assign(paste0(clusters[i]), as.numeric(dat_subset$padj))
-  
 }
-
-
 final_data <- cbind(c0, c1, c2, c3, c4, c5, c6, c7, c8)
 row.names(final_data) <- names
 
 
-gsea_file <- "MASH_emmreml_downstream/gsea_padj_plots/Figure_2B_gsea.rds"
+gsea_file <- "gsea_padj_plots/Figure_2B_gsea.rds"
 gsea <- readRDS(gsea_file)
 gsea_original <- gsea$data
 
@@ -60,7 +65,6 @@ score <- vector(length=length(row.names(final_data)))
 count <- vector(length=length(row.names(final_data)))
 
 for(i in 1:length(row.names(final_data))){
-  
   pathway_name <- row.names(final_data)[i]
   pathway_name_final <- gsub("HALLMARK_", "", pathway_name)
   values <- head(sort(final_data[i,]),3)
@@ -71,7 +75,6 @@ for(i in 1:length(row.names(final_data))){
   
   temp <- subset(gsea_original, gsea_original$pathway_name %in% pathway_name_final)
   count[i] <- length(which(temp$padj < 0.1))
-  
 }
 
 plot_data <- data.frame(
