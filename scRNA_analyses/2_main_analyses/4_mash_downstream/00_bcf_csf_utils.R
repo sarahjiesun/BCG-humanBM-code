@@ -6,7 +6,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-
 library(here)
 library(future)
 library(future.apply)
@@ -42,6 +41,10 @@ library(fgsea)
 library(EnrichmentBrowser)
 library(phateR)
 library(MetBrewer)
+
+# This code is for graphics settings ----------------------------------------------------
+
+
 dx_colors <- met.brewer(name = "Java")
 dx_colors <- dx_colors[c(1:3,5)]
 names(dx_colors) <- c("PSC","UC","CD","NC")
