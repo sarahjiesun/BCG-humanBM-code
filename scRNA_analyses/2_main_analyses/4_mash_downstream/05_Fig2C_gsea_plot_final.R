@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -22,12 +20,12 @@ library(mashr)
 library(dplyr)
 library(cowplot)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+# Here we make an updated version of the gsea heatmap from "04_gsea_padj_heatmap"
 
-OUT_DIR <- c("MASH_emmreml_downstream/gsea_padj_plots/")
-
+# setup --------------------------------
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream")
+OUT_DIR <- c("gsea_padj_plots/")
 source("bcf_csf_utils.R")
-
 
 theme_set(theme_minimal_grid() +
             theme(
@@ -44,8 +42,8 @@ theme_set(theme_minimal_grid() +
 )
 
 
-
-gsea_file <- "MASH_emmreml_downstream/gsea_padj_plots/Figure_2B_gsea.rds"
+# Read in the heatmap object from "04_gsea_padj_heatmap" -----------------------------------
+gsea_file <- "gsea_padj_plots/Figure_2B_gsea.rds"
 gsea <- readRDS(gsea_file)
 
 
