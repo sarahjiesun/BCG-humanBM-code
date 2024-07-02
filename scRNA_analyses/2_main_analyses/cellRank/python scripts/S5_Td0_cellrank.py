@@ -5,9 +5,9 @@ import numpy as np
 import matplotlib as plt
 
 import os
-os.chdir('/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input')
+os.chdir('/scRNA_analyses/2_main_analyses/cellRank/wVelocity_input')
 
-adata = anndata.read_loom("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture7_output/velocyto/capture7_output.loom")
+adata = anndata.read_loom("/capture7_output/velocyto/capture7_output.loom")
 sample_obs = pd.read_csv("cellID_obs_S5_Td0.csv")
 umap_cord = pd.read_csv("cell_embeddings_S5_Td0.csv")
 cell_clusters = pd.read_csv("clusters_S5_Td0.csv")
@@ -33,7 +33,7 @@ import scvelo as scv
 import scanpy as sc
 import cellrank as cr
 import numpy as np
-os.chdir('/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/velocity_plots')
+os.chdir('/scRNA_analyses/2_main_analyses/cellRank/velocity_plots')
 
 scv.pp.filter_and_normalize(adata, min_shared_counts=20, n_top_genes=2000)
 sc.tl.pca(adata)
@@ -53,7 +53,7 @@ vu = vu.rename(columns = {0:'coord1', 1:'coord2'})
 vu.to_csv('S5_Td0_velocity_umap_coords.csv')
 
 
-os.chdir('/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/terminal_state_probs')
+os.chdir('/scRNA_analyses/2_main_analyses/cellRank/terminal_state_probs')
 
 
 from cellrank.tl.kernels import VelocityKernel
