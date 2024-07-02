@@ -12,21 +12,20 @@ library(Seurat)
 library(sctransform)
 library(data.table)
 
+setwd("/scRNA_analyses/1_data_processing_clustering/")
 
 
 # setup outdir ------------------------------------------------------------
-
 ## set to 1Gb
 options(future.globals.maxSize = 1000 * 1024^2)
 OUT_DIR <- c("sctransform_all_genes_regress_individual/")
 dir.create(OUT_DIR)
 
 # read in merged_filtered_labelled seurat object --------------------------
-
 mergeAllCells <- readRDS(file = "merged_filtered_seuratObject.rds")
 mergeAllCells$batchID <- factor(mergeAllCells$batchID)
 
-##visualize clustering before integration
+# visualize clustering before integration ----------------------------------------------
 mergeAllCells_temp <- SCTransform(mergeAllCells, vars.to.regress = c("percent.mt","batchID"), verbose = FALSE)
 mergeAllCells_temp <- RunPCA(mergeAllCells_temp, npcs = 30)
 mergeAllCells_temp <- RunUMAP(mergeAllCells_temp, dims = 1:30, seed.use = 2020)
@@ -58,7 +57,6 @@ dev.off()
 
   
 # Split the merged object by timepoint ------------------------------------
-
 mergeAllCells_list <- SplitObject(mergeAllCells, split.by = "timepoint")
 #   Td0     Tm3
 # 42,493   49,521
@@ -68,7 +66,6 @@ Tm3 <- mergeAllCells_list[[2]]
 
 
 # Split Tm3 into CTL and BCG ----------------------------------------------
-
 Tm3_list <- SplitObject(Tm3, split.by = "vaccination")
 #   BCG       CTL
 #  37,999     11,522
@@ -78,22 +75,18 @@ Tm3_CTL <- Tm3_list[[2]]
 
 
 # Create final seurat object list split 3 ways ----------------------------
-
 mergeAllCells_list <- c(Td0, Tm3_BCG, Tm3_CTL)
 
 
 # Run scTransform separately  ---------------------------------------------
-
 #scTransform replaces NormalizeData(), ScaleData(), and FindVariableFeatures(); FindvariableFeatures() identifies features that are outliers on a mean-variance plot
 mergeAllCells_list <- lapply(X = mergeAllCells_list, FUN = function(x) {
   x <- SCTransform(x, vars.to.regress = c("percent.mt","batchID"))
 })
-
 saveRDS(mergeAllCells_list, file = paste0(OUT_DIR,"mergedAllCells_seuratObject_afterSCTransform.rds"))
 
 
 # Integration -------------------------------------------------------------
-
 mergeAllCells_list <- readRDS(file="sctransform_all_genes_regress_individual/mergedAllCells_seuratObject_afterSCTransform.rds")
 
 features <- SelectIntegrationFeatures(object.list = mergeAllCells_list, nfeatures = 3000)
@@ -110,7 +103,6 @@ saveRDS(allCells_integrated, file = paste0(OUT_DIR,"mergedAllCells_seuratObject_
     
 
 # Run standard clustering workflow ----------------------------------------
-
 allCells_integrated <- RunPCA(allCells_integrated, npcs = 30)
 allCells_integrated <- RunUMAP(allCells_integrated, dims = 1:30, seed.use = 2020)
 allCells_integrated <- FindNeighbors(allCells_integrated, dims = 1:20)
