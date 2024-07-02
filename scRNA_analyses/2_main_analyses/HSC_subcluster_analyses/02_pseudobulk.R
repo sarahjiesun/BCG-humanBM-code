@@ -11,26 +11,23 @@ library(Seurat)
 library(textTinyR)
 library(pbapply)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-
-IN_DIR <- "HSC_subcluster_analysis/1_UMAP_label_clusters/"
-out_dir <- "HSC_subcluster_analysis/2_pseudobulk/"
+# setup --------------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses")
+IN_DIR <- "1_UMAP_label_clusters/"
+out_dir <- "2_pseudobulk/"
 dir.create(out_dir)
 
 # Read in processed object with UNIQUE ID labels ------------------------
-
 all <- readRDS(file=paste0(IN_DIR,"HSC_final_UNIQUE_IDS.rds"))
 DefaultAssay(all) <- "RNA"
 
 
 # Split the object by celltype ---------------------------------------------
-
 all_list <- SplitObject(all, split.by = "seurat_clusters")
 
 
 
 # Save a separate object for each cluster ---------------------------------
-
 for (i in 1:length(all_list)){
   name <- names(all_list)[i]
   saveRDS(all_list[[i]], file = paste0(out_dir,name,"_singlets.rds"))
@@ -39,7 +36,6 @@ for (i in 1:length(all_list)){
 
 
 # Calculate pseudobulk sums -----------------------------------------------
-
 clusters <- c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
 for (i in 1:length(clusters)){
   name <- clusters[i]
