@@ -1,12 +1,25 @@
 
-#First run velocyto (scripts in the velocyto folder) to generate loom files for each capture
-#Then run the Rscript in the cellrank folder to generate inputs for cellrank
+# This script describes the overall cellRank workflow and gives an example of how each sample was processed 
+
+#################
+##  overview   ##
+#################
+
+#First run velocyto to generate loom files for each capture
+#Then run the Rscript "01_make_input_cellrank_wVelocyto" in this cellrank folder to generate inputs for cellrank
 #run module load python -> conda activate cellrank -> python
 
 
 
-#CELL RANK estimators and kernels (low-level mode)
+#################
+##  overview   ##
+#################
 
+#The following is an example of what was run for each capture (capture 2 used as an example)
+#The actual python scripts run for each capture are located in the "python scripts" folder 
+
+
+#CELL RANK estimators and kernels (low-level mode)
 
 import scvelo as scv
 import pandas as pd
@@ -17,7 +30,7 @@ import anndata
 import os
 os.chdir("")
 
-adata = anndata.read_loom("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture2_output/velocyto/capture2_output.loom")
+adata = anndata.read_loom("/capture2_output/velocyto/capture2_output.loom")
 sample_obs = pd.read_csv("cellID_obs.csv")
 umap_cord = pd.read_csv("cell_embeddings.csv")
 cell_clusters = pd.read_csv("clusters.csv")
