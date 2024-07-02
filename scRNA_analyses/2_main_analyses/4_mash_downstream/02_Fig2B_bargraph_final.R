@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -22,10 +20,11 @@ library(mashr)
 library(dplyr)
 library(cowplot)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+# This code extends the code from "01_DE_genes_bargraphs" and creates a final version of the bargraph (the one seen in Fig 2B of this paper
 
-OUT_DIR <- c("MASH_emmreml_downstream/DE_genes_bargraphs/")
-
+# setup -------------------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream")
+OUT_DIR <- c("DE_genes_bargraphs/")
 source("bcf_csf_utils.R")
 
 theme_set(theme_minimal_grid() +
@@ -44,19 +43,10 @@ theme_set(theme_minimal_grid() +
 
 
 
-
-barplot_file <- "/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/MASH_emmreml_downstream/DE_genes_bargraphs/Figure_2A_bargraph.rds"
+# Read in the bargraph that was created in "01_DE_genes_bargraphs" --------------------------------------------
+barplot_file <- "/DE_genes_bargraphs/Figure_2A_bargraph.rds"
 barplot <- readRDS(barplot_file)
 
-# myColorScale <- c('HSC_a'='#EF5350','HSC_b'='#CC0C00','CMP_a'='#FF7F0E','CMP_b'='#FFD147','CMP_c'='#CC9900',
-#                   'GMP_a'='#33CC00', 'GMP_b' ='#99CC00', 'MEP_a'='#8C5782', 'MEP_b'='#990080', 'MEP_c'='#BA68C8',
-#                   'MLP_a'='#46B8DA', 'MLP_b'='#0288D1', 'PreBNK'='#1A0099')
-# 
-# 
-# ct_info <- data.frame(ct=names(myColorScale)) %>% 
-#   mutate(type= gsub("_.*","",ct)) 
-# ct_info$type[ct_info$type == "PreBNK"] <- "MLP"
-# 
 
 barplot$data$cluster <- factor(barplot$data$cluster, c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_a", "GMP_b", "MEP_a", "MEP_b", "MEP_c", "MLP_a", "MLP_b", "PreBNK"))
 
