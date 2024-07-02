@@ -11,17 +11,19 @@ library(Seurat)
 library(textTinyR)
 library(pbapply)
 
+setwd("/scRNA_analyses/2_main_analyses/")
 IN_DIR <- "label_transfer/"
 out_dir <- c("pseudobulk/")
 dir.create(out_dir)
 
-# Read in processed object with UNIQUE ID labels ------------------------
 
-#S9 Td0 needs to be filtered out from this object!
+# Read in processed object with UNIQUE ID labels ------------------------
+#S9 Td0 needs to be filtered out from this object! This sample was never collected but a few cells may have been erroneously assigned by demuxlet
 all <- readRDS(file=paste0(IN_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 DefaultAssay(all) <- "RNA"
     
 #Filter out S9 Td0
+#This sample was never collected but a few cells may have been erroneously assigned by demuxlet
 unique_ids <- unique(all$UNIQUE_ID)
 unique_ids = unique_ids[!(unique_ids %in% "SNG-LB-SS-1S-RS-S9-CD34neg_S8_R1_001_Td0_BCG" )]
 all<- subset(
@@ -31,13 +33,10 @@ all<- subset(
   
   
 # Split the object by celltype ---------------------------------------------
-  
 all_list <- SplitObject(all, split.by = "clust_names")
   
 
-
 # Save a separate object for each cluster ---------------------------------
-
 for (i in 1:length(all_list)){
   name <- names(all_list)[i]
   saveRDS(all_list[[i]], file = paste0(out_dir,name,"_singlets.rds"))
@@ -46,7 +45,6 @@ for (i in 1:length(all_list)){
 
 
 # Calculate pseudobulk sums -----------------------------------------------
-
 clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK", "unknown1", "unknown2")
 for (i in 1:length(clusters)){
   name <- clusters[i]
