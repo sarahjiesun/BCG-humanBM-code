@@ -1,5 +1,4 @@
 #R version 4.1.0
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -11,18 +10,21 @@ library(ggrepel)
 library(EMMREML)
 library(qvalue)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/") 
 
-OUT_DIR <- "HSC_subcluster_analysis/4_emmreml_betas/"
+# We run emmreml to determine DE genes within each HSC subcluster 
+
+
+# setup -------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/") 
+OUT_DIR <- "4_emmreml_betas/"
 dir.create(OUT_DIR)
 
-# Setup -------------------------------------------------------------------
 
-filter_15_list <- readRDS(file=paste0("HSC_subcluster_analysis/3_filter15/filter_15_list.rds"))
+# Read in the filter 15 samples list of samples with fewer than 15 cells ---------------------------------------------
+# These samples will not be included in downstream analyses
+filter_15_list <- readRDS(file=paste0("3_filter15/filter_15_list.rds"))
 names(filter_15_list) <- c("c0", "c1", "c2", "c3", "c4", "c5", "c6", "c7", "c8", "c9")
-
 clusters <- c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-
 DE_genes_count_pval <- vector(length=length(clusters))
 DE_genes_count_qBH <- vector(length=length(clusters))
 DE_genes_count_qST <- vector(length=length(clusters))
@@ -31,7 +33,6 @@ DE_0.1_genes_count_qBH <- vector(length=length(clusters))
 DE_0.1_genes_count_qST <- vector(length=length(clusters))
 num_genes <- vector(length=length(clusters))
 threshold <- 0
-
 
 expression_threshold=1
 for(i in 1:length(clusters)){
@@ -44,7 +45,7 @@ for(i in 1:length(clusters)){
   }
   
   #### 1. Read and format pseudobulk data & meta_data
-  pseudobulk <- readRDS(file = paste0("HSC_subcluster_analysis/2_pseudobulk/",name,"_pseudobulk.rds"))
+  pseudobulk <- readRDS(file = paste0("2_pseudobulk/",name,"_pseudobulk.rds"))
   meta_data <- read.csv(file="all_samples_meta_data_emmreml.csv", header=TRUE)
   meta_data$detailed_group=paste0(meta_data$group,"_",meta_data$timepoint)
   meta_data$group=factor(meta_data$group,levels=c("CTL","BCG"))
@@ -91,7 +92,6 @@ for(i in 1:length(clusters)){
     if(length(meta_data$group[which(meta_data$group == "BCG")])>=4){
       
       #### 4. Filter out undesired (lowly expressed) genes: I change the strategy of filtering, keeping genes above threshold in @ least 1 detailed group (CTL_0, CTL_1, BCG_0 or BCG_1)
-      
       y <- DGEList(pseudobulk)
       y <- calcNormFactors(y)
       v <- voom(y, plot=TRUE,span=0.1)
