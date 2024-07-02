@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library(ggplot2)
 library(DESeq2)
 library(statmod)
@@ -26,22 +24,19 @@ library(gridExtra)
 library(Seurat)
 
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-
-OUT_DIR <- c("HSC_subcluster_analysis/Hallmark_pathways_dotplot/")
+# setup ----------------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/")
+OUT_DIR <- c("Hallmark_pathways_dotplot/")
 dir.create(OUT_DIR)
 
-# read in gsea results for each cluster 
+# read in gsea results for each cluster ------------------------------------------------
 clusters <- c("c0", "c1", "c2", "c3", "c4", "c5", "c6", 'c7', "c8")
-
 
 target_pathways <- c("HALLMARK_OXIDATIVE_PHOSPHORYLATION", "HALLMARK_TNFA_SIGNALING_VIA_NFKB", "HALLMARK_HYPOXIA", "HALLMARK_REACTIVE_OXYGEN_SPECIES_PATHWAY", "HALLMARK_APOPTOSIS",
                      "HALLMARK_ALLOGRAFT_REJECTION","HALLMARK_IL2_STAT5_SIGNALING", "HALLMARK_MYC_TARGETS_V1", "HALLMARK_MYC_TARGETS_V2", "HALLMARK_DNA_REPAIR",
                      "HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION", "HALLMARK_UV_RESPONSE_UP", "HALLMARK_HEME_METABOLISM", "HALLMARK_KRAS_SIGNALING_DN")
 
-
 MPP_data <- read.csv(file="MPP_cluster_data.csv")
-
 
 for(i in 1:length(clusters)){
   dat <- data.frame(read.csv(file=paste0("HSC_subcluster_analysis/9_gsea/NOT_SORTED_gsea_result_",clusters[i],"_no_correlations")))
