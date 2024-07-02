@@ -17,6 +17,7 @@ library(grid)
 library(gridExtra)
 library(data.table)
 
+setwd("/scRNA_analyses/1_data_processing_clustering/")
 
 
 # Create batch names list and cell numbers matrix -------------------------
@@ -30,7 +31,7 @@ batch_cell_numbers <- matrix(nrow = length(batchNames_list), ncol = 3)
 for (i in 1:length(batchNames_list)){
   
   batch <- batchNames_list[i]
-  data <- Read10X(data.dir = paste0("../../../",batch,"_output/outs/filtered_feature_bc_matrix"))
+  data <- Read10X(data.dir = paste0("../filter_feature_bc_matrices/", batch, "/filtered_feature_bc_matrix"))
   
   batch_cell_numbers[i,] <- c(batch, dim(data)[1], dim(data)[2]) #Create a table with num_genes and num_cells for each capture
   
@@ -49,14 +50,9 @@ saveRDS(batchList, file="batchList.rds")
 saveRDS(batchObjectList, file="batchObjectList.rds")
 
 
-##STOP POINT
 
-
-batchList <- readRDS("batchList.rds")
-batchObjectList <- readRDS("batchObjectList.rds")
-
-
-#Read in demuxlet data (demuxlet best files were converted to csv in excel and barcodes were edited to exlude "-1" at the end)
+# Read in demuxlet data (demuxlet best files were converted to csv in excel and barcodes were edited to exlude "-1" at the end) ------------------------------
+# This contains donor ID assigments to each of the cells ----------------------------------------------------
 
 demuxlet_out_list <- c("capture1_demuxlet", "capture2_demuxlet", "capture3_demuxlet", "capture4_demuxlet", "capture5_demuxlet", "capture6_demuxlet", "capture7_demuxlet", "capture8_demuxlet", "capture9_demuxlet", "capture10_demuxlet", "capture11_demuxlet", "capture12_demuxlet", "capture13_demuxlet", "capture14_demuxlet")
 
@@ -67,8 +63,8 @@ for (i in 1:length(demuxlet_out_list)){
   
   assign(paste0(demuxlet_out), as.data.frame(data))
 }
-
 demuxlet_data_list <- list(capture1_demuxlet, capture2_demuxlet, capture3_demuxlet, capture4_demuxlet, capture5_demuxlet, capture6_demuxlet, capture7_demuxlet, capture8_demuxlet, capture9_demuxlet, capture10_demuxlet, capture11_demuxlet, capture12_demuxlet, capture13_demuxlet, capture14_demuxlet)
+
 
 
 # Create Seurat objects and add demuxlet assignments ----------------------
@@ -145,11 +141,8 @@ merge_unfilt <- merge(capture1_unfilt, y = c(capture2_unfilt, capture3_unfilt, c
 saveRDS(merge_unfilt, file = "merged_UNFILTERED_seuratObject.rds")
 fwrite(merge_unfilt@meta.data, "all_cells_unfiltered_metadata.txt")
 
-
-
-
-
 seuratObjectList_unfilt <- c(capture1_unfilt, capture2_unfilt, capture3_unfilt, capture4_unfilt, capture5_unfilt, capture6_unfilt, capture7_unfilt, capture8_unfilt, capture9_unfilt, capture10_unfilt, capture11_unfilt, capture12_unfilt, capture13_unfilt, capture14_unfilt)
+
 
 
 # Get percent mt stats for unfiltered objects -----------------------------
@@ -240,7 +233,6 @@ for (i in 1:length(seuratObjectList_unfilt)){
   cell_nums_singlets_QCfiltered[i] <- dim(seuratObject)[2]
   cell_nums_percent_singlets_retained[i] <- (cell_nums_singlets_QCfiltered[i]/cell_nums_singlets[i])*100
 }
-
 seuratObjectList <- c(capture1_filt, capture2_filt, capture3_filt, capture4_filt, capture5_filt, capture6_filt, capture7_filt, capture8_filt, capture9_filt, capture10_filt, capture11_filt, capture12_filt, capture13_filt, capture14_filt)
 
 
@@ -268,7 +260,6 @@ for (i in 1:length(seuratObjectList)){
 
 
 # process and save class percentages and cell nums data -------------------
-
 demuxlet_class_percentages <- as.data.frame(demuxlet_class_percentages)
 colnames(demuxlet_class_percentages) <- c("batchID","perc_singlet","perc_doublet","perc_ambiguous", "singlet_total", "doublet_total", "ambiguous_total")
 demuxlet_class_percentages$perc_singlet <- round(as.numeric(as.character(demuxlet_class_percentages$perc_singlet)), 4)
@@ -285,10 +276,9 @@ write.table(cell_nums_final, "cell_numbers_after_QC_summary.txt", quote = FALSE,
 
 
 # merge filtered Seurat objects -------------------------------------------
-
 mergeAllCells <- merge(capture1_filt, y = c(capture2_filt, capture3_filt, capture4_filt, capture5_filt, capture6_filt, capture7_filt, capture8_filt, capture9_filt, capture10_filt, capture11_filt, capture12_filt, capture13_filt, capture14_filt), add.cell.ids = batchList, project = "BM_CD34_scRNA")
-
 saveRDS(mergeAllCells, file = "merged_filtered_NOLABEL_seuratObject.rds")
+
 
 # Add Td0/Tm3 label -------------------------------------------------------
 timepoint <- vector(length=length(mergeAllCells$BEST))
@@ -315,7 +305,6 @@ mergeAllCells$timepoint <- factor(mergeAllCells$timepoint, levels = c("Td0","Tm3
 
 
 # Add CTL/BCG label -------------------------------------------------------
-
 CTL <- c("SNG-LB-SS-1S-RS-S13-CD34neg_S12_R1_001", "SNG-LB-SS-1S-RS-S7-CD34neg_S6_R1_001", "SNG-LB-SS-1S-RS-S11-CD34neg_S10_R1_001", "SNG-LB-SS-1S-RS-S3-CD34neg_S3_R1_001", "SNG-LB-SS-1S-RS-S18-CD34neg_S17_R1_001")
 mergeAllCells$vaccination <- ifelse(mergeAllCells@meta.data$BEST %in% CTL, "CTL", "BCG")
 mergeAllCells$vaccination <- factor(mergeAllCells$vaccination, levels = c("CTL","BCG"))
