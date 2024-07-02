@@ -1,4 +1,4 @@
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+
 library("ggplot2")
 library ("DESeq2")
 library(statmod)
@@ -12,18 +12,19 @@ library(data.table)
 library(ggplot2)
 library(msigdbr)
 
+# We perform GSEA for HSC subclusters 
+
+
+# setup ------------------------------------------------------
 set.seed(831)
-
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-
-OUT_DIR <- c("HSC_subcluster_analysis/9_gsea/")
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses")
+OUT_DIR <- c("9_gsea/")
 dir.create(OUT_DIR)
 
 
 # Read in posterior means (with correlations) and lfsr ----------
-
-PM_correlations <- read.table(file=paste0("HSC_subcluster_analysis/5_mash/mash_results/posteriorMeans_wcorrelations.txt"), header=TRUE)
-lfsr_correlations <- read.table(file=paste0("HSC_subcluster_analysis/5_mash/mash_results/lfsr_wcorrelations_output.txt"), header=TRUE)
+PM_correlations <- read.table(file=paste0("5_mash/mash_results/posteriorMeans_wcorrelations.txt"), header=TRUE)
+lfsr_correlations <- read.table(file=paste0("5_mash/mash_results/lfsr_wcorrelations_output.txt"), header=TRUE)
 
 clusters <- colnames(PM_correlations)
 for(i in 1:length(clusters)){
@@ -36,9 +37,8 @@ for(i in 1:length(clusters)){
   assign(paste0(name,"_table"), sorted_ranked_list)
   print(i)
 }
-
-
 df_list <- list(c0_table, c1_table, c2_table, c3_table, c4_table, c5_table, c6_table, c7_table, c8_table)
+
 
 
 # Gene set enrichment of Hallmark pathways --------------------------------
@@ -71,10 +71,10 @@ for(i in 1:length(df_list)){
 
 
 
-# Read in posterior means without correlations and lfsr ----------
+# Read in posterior means without correlations and lfsr -----------------------------------------
 
-PM_correlations <- read.table(file=paste0("HSC_subcluster_analysis/5_mash/mash_results/posteriorMeans.txt"), header=TRUE)
-lfsr_correlations <- read.table(file=paste0("HSC_subcluster_analysis/5_mash/mash_results/lfsr_output.txt"), header=TRUE)
+PM_correlations <- read.table(file=paste0("5_mash/mash_results/posteriorMeans.txt"), header=TRUE)
+lfsr_correlations <- read.table(file=paste0("5_mash/mash_results/lfsr_output.txt"), header=TRUE)
 
 clusters <- colnames(PM_correlations)
 for(i in 1:length(clusters)){
@@ -88,8 +88,8 @@ for(i in 1:length(clusters)){
   print(i)
 }
 
-
 df_list <- list(c0_table, c1_table, c2_table, c3_table, c4_table, c5_table, c6_table, c7_table, c8_table)
+
 
 
 # Gene set enrichment of Hallmark pathways --------------------------------
