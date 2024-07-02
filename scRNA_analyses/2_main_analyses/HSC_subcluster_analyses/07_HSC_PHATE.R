@@ -1,9 +1,10 @@
-#### FIGURE 2 PHATE HSCs
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+
+# Here we make PHATE maps of the HSCs 
+
+# setup ----------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/")
 source("bcf_csf_utils.R")
-
-
-out <- "HSC_subcluster_analysis/02_HSC_PHATE/plots/"
+out <- "02_HSC_PHATE/plots/"
 dir.create(out,recursive = T)
 
 
@@ -38,17 +39,14 @@ hsc_phate <- pdata %>%
 hsc_phate_file <- file.path(out, 
                              paste0("FINAL_hsc_phate",".pdf"))
 #paste0("phates_", "knn",i_params[1],"_gamma",i_params[2],".pdf"))
-
 ggsave(filename = hsc_phate_file, plot = hsc_phate, height = 2 , width = 2)
 
 
 ##### HSC only PHATE
-
 library(reticulate)
 use_python("/opt/anaconda3/bin/python")
 
-hsc_file <- file.path("/Users/raguirreg/Projects/UChicago/BCG_CSF/data/scRNASeq",
-                      "HSC_final_UNIQUE_IDS.rds")
+hsc_file <- file.path("1_UMAP_label_clusters/HSC_final_UNIQUE_IDS.rds")
 
 hsc_sub <- readRDS(hsc_file)
 
@@ -67,21 +65,18 @@ hsc_pdata <-  cbind(pdata_hsc,
 ) %>% 
   mutate(hsc_clusters_lab=paste0("c",hsc_clusters)) 
 
+
 ##### save PHATE data
-
-hsc_pdata_file <- file.path("HSC_subcluster_analysis/sc_pdata_phate_ndim2_knn6_t10_gamma1.csv")
-
+hsc_pdata_file <- file.path("sc_pdata_phate_ndim2_knn6_t10_gamma1.csv")
 write.csv(hsc_pdata,file = hsc_pdata_file)
 
-##### if PHATE data for HSC avail then load this 
 
+##### if PHATE data for HSC avail then load this 
 hsc_pdata <- read.csv(hsc_pdata_file)
 
+
 ##### MPP score 
-
-
-hsc_sub <- readRDS(file=paste0("HSC_subcluster_analysis/1_UMAP_label_clusters/HSC_final_UNIQUE_IDS.rds"))
-
+hsc_sub <- readRDS(file=paste0("1_UMAP_label_clusters/HSC_final_UNIQUE_IDS.rds"))
 
 MPP_average_expression <- data.frame(AverageExpression(hsc_sub, 
                                                        assays='SCT',
@@ -89,24 +84,20 @@ MPP_average_expression <- data.frame(AverageExpression(hsc_sub,
                                                        group.by="seurat_clusters")[[1]])
 
 MPP_scaled_data <- data.frame(scale(t(MPP_average_expression), scale=TRUE, center=TRUE))
-
 MPP_scaled_data$average <- rowMeans(MPP_scaled_data)
 row.names(MPP_scaled_data) <- str_replace(row.names(MPP_scaled_data),"X","")
-
 MPP_scaled_data_ordered <- MPP_scaled_data[order(MPP_scaled_data$average, decreasing = TRUE),]
-
 write.csv(MPP_scaled_data_ordered, file=paste0("MPP_cluster_data.csv"))
 
-##### GSEA results 
 
+##### GSEA results 
 target_pathways <- c("HALLMARK_APOPTOSIS", "HALLMARK_INTERFERON_GAMMA_RESPONSE", "HALLMARK_INFLAMMATORY_RESPONSE", "HALLMARK_TNFA_SIGNALING_VIA_NFKB",
                      "HALLMARK_IL2_STAT5_SIGNALING", "HALLMARK_COMPLEMENT", "HALLMARK_REACTIVE_OXYGEN_SPECIES_PATHWAY", "HALLMARK_HYPOXIA",
                      "HALLMARK_OXIDATIVE_PHOSPHORYLATION", "HALLMARK_CHOLESTEROL_HOMEOSTASIS","HALLMARK_CHOLESTEROL_HOMEOSTASIS","HALLMARK_KRAS_SIGNALING_UP","HALLMARK_KRAS_SIGNALING_DN")
 
 
-
-#gsea_res <- list.files("/Users/raguirreg/Projects/UChicago/BCG_CSF/analysis/02_HSC_PHATE/9_gsea",full.names = T)
-gsea_res <- list.files("HSC_subcluster_analysis/9_gsea",full.names = T)
+#gsea_res <- list.files("9_gsea",full.names = T)
+gsea_res <- list.files("9_gsea",full.names = T)
 gsea_res <- gsea_res[grep("^NOT",basename(gsea_res))]
 gsea_res <- gsea_res[grep("no_correlations$",basename(gsea_res))]
 names(gsea_res) <- gsub("NOT_SORTED_gsea_result_","",gsub("_no_correlations$","",basename(gsea_res)))
@@ -121,10 +112,8 @@ gsea_p_cluster <- bind_rows(gsea_list, .id = "hsc_clusters_lab") %>%
   select(hsc_clusters_lab,pathways,padj) %>% 
   spread(pathways,padj)
 
+
 ##### Plotting all PHATES 
-
-
-
 main_clusters <- hsc_pdata %>% 
   droplevels() %>% 
   ggplot(aes(x= hsc_PHATE1, y=hsc_PHATE2)) +
@@ -208,10 +197,6 @@ gsea_phates <- hsc_pdata %>%
 ggsave(filename = file.path(out, paste0("hsc_GSEA_phate.pdf")), 
        plot = gsea_phates, 
        height = 3.25 , width = 7)
-
-
-
-
 
 
 
