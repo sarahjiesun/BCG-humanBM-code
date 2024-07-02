@@ -12,21 +12,21 @@ library(Seurat)
 library(sctransform)
 library(data.table)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/") 
+# In this script we determine all the sample-cluster groups that have fewer than 15 cells
+# These are not included in future analyses 
 
-OUT_DIR <- "HSC_subcluster_analysis/3_filter15/"
+
+# setup -------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/") 
+OUT_DIR <- "3_filter15/"
 dir.create(OUT_DIR)
 
 
-
 # Determine the number of cells from each sample in each term fate group ----------
-HSC <- readRDS(file=paste0("HSC_subcluster_analysis/1_UMAP_label_clusters/HSC_final_UNIQUE_IDS.rds"))
-
+HSC <- readRDS(file=paste0("1_UMAP_label_clusters/HSC_final_UNIQUE_IDS.rds"))
 DefaultAssay(HSC) <- "integrated"
 
-
 meta_data <- read.csv(file="all_samples_meta_data.csv")
-
 allCells_by_cluster_list <- SplitObject(HSC, split.by = "seurat_clusters")
 
 for(i in 1:length(allCells_by_cluster_list)) 
