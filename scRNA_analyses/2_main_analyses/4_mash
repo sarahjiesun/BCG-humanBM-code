@@ -1,4 +1,4 @@
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -14,7 +14,7 @@ library(mashr)
 library(dplyr)
 library(rje)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
+setwd("/scRNA_analyses/2_main_analyses/")
 OUT_DIR <- "MASH/"
 dir.create(OUT_DIR)
 
@@ -69,7 +69,6 @@ SE_table <- cbind(sqrt(HSC_a_subset$sdev_groupBCG.timepoint), sqrt(HSC_b_subset$
                   sqrt(MEP_a3_subset$sdev_groupBCG.timepoint), sqrt(mixed_a_subset$sdev_groupBCG.timepoint), sqrt(mixed_b_subset$sdev_groupBCG.timepoint), sqrt(PreBNK_subset$sdev_groupBCG.timepoint))
 colnames(SE_table) <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
 row.names(SE_table) <- genes_common
-
 
 
 
