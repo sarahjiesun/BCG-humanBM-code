@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -21,29 +19,25 @@ library(ashr)
 library(mashr)
 library(dplyr)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-
-OUT_DIR <- c("MASH_emmreml_downstream/DE_genes_bargraphs/")
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream/")
+OUT_DIR <- c("DE_genes_bargraphs/")
 dir.create(OUT_DIR)
-
 
 
 # Read in MASH results without correlations with custom matrices ----------------------------------------------------
 
-
-PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
-lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+PM <- read.table(file=paste0("../MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+lfsr <- read.table(file=paste0("../MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
 
 #check that genes are in the same order
 which(row.names(PM) != row.names(lfsr))
 
 
 
-
 # Make bar graph of num DE genes per cluster lfsr < 0.01 ------------------------------
 
-PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
-lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+PM <- read.table(file=paste0("../MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+lfsr <- read.table(file=paste0("../MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
 
 #check that genes are in the same order
 which(row.names(PM) != row.names(lfsr))
@@ -95,7 +89,7 @@ myColorScale <- c('HSC_a'='#EF5350','HSC_b'='#CC0C00','CMP_a'='#FF7F0E','CMP_b'=
                   'MLP_a'='#46B8DA', 'MLP_b'='#0288D1', 'PreBNK'='#1A0099')
 
 
-#save same plot as RDS
+# save same plot as RDS -------------------------------------------------
 p <- ggplot(df_0.01, aes(x = cluster, y = values2, fill = cluster)) + 
   geom_bar(stat = "identity", aes(fill=cluster), alpha=0.7, color="black") +
   scale_fill_manual(values = myColorScale)+theme_classic()+ 
@@ -108,10 +102,10 @@ saveRDS(p, file=paste0(OUT_DIR,"Figure_2A_bargraph.rds"))
 
 
 
-## number of sig genes overlapping between HSC c1 and HSC c2
+# number of sig genes overlapping between HSC c1 and HSC c2 -----------------------------------------
 
-PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
-lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+PM <- read.table(file=paste0("../MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+lfsr <- read.table(file=paste0("../MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
 #check that genes are in the same order
 which(row.names(PM) != row.names(lfsr))
 
