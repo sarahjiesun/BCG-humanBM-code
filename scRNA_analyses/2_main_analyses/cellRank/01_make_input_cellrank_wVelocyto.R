@@ -5,7 +5,6 @@ BiocManager::install("pcaMethods")
 install_github("velocyto-team/velocyto.R")
 install.packages("pagoda2")
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 library(devtools)
 library(velocyto.R)
 library(pagoda2)
@@ -14,26 +13,33 @@ library(hdf5r)
 library(SeuratDisk)
 library(SingleCellExperiment)
 
-# Capture 1 ---------------------------------------------------------------
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/")
-IN_DIR <- "/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture1_output/velocyto/"
-OUT_DIR <- "/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+# Here we read in loom files for each scRNA capture (14 total captures) that were generated from running velocyto separately for each capture 
+# For each donor within each capture: we extract cells and their embeddings + cluster IDs
+# This is the input needed to run CellRank downstream 
 
+
+
+setwd("/scRNA_analyses/2_main_analyses/cellRank")
+
+
+
+# Capture 1 ---------------------------------------------------------------
+IN_DIR <- "/capture1_output/velocyto/" 
+OUT_DIR <- "wVelocity_input/"
+dir.create(OUT_DIR)
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture1_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
-
 
 S8_Td0_obj <- subset(
   x = seurat_obj,
   subset = UNIQUE_ID %in% "SNG-LB-SS-1S-RS-S8-CD34neg_S7_R1_001_Td0_BCG"
 )
-
 cells_S8_Td0 <- Cells(S8_Td0_obj)
 cells_S8_Td0 <- gsub("capture1_", "capture1_output:", cells_S8_Td0)
 cells_S8_Td0 <- gsub("-1", "x", cells_S8_Td0)
@@ -55,16 +61,15 @@ write.csv(clusters_S8_Td0, file = paste0(OUT_DIR, "clusters_S8_Td0.csv"))
 # Capture 2 ---------------------------------------------------------------
 
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture2_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
-
+IN_DIR <- "/capture2_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture2_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -92,15 +97,15 @@ write.csv(clusters_S8_Tm3, file = paste0(OUT_DIR, "clusters_S8_Tm3.csv"))
 
 # Capture 3 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture3_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture3_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture3_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -154,15 +159,15 @@ write.csv(clusters_S15_Td0, file = paste0(OUT_DIR, "clusters_S15_Td0.csv"))
 
 # Capture 4 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture4_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture4_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture4_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -215,15 +220,15 @@ write.csv(clusters_S15_Tm3, file = paste0(OUT_DIR, "clusters_S15_Tm3.csv"))
 
 # Capture 5 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture5_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture5_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture5_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -295,15 +300,15 @@ write.csv(clusters_S16_Td0, file = paste0(OUT_DIR, "clusters_S16_Td0.csv"))
 
 # Capture 6 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture6_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture6_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture6_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -376,15 +381,15 @@ write.csv(clusters_S16_Tm3, file = paste0(OUT_DIR, "clusters_S16_Tm3.csv"))
 
 # Capture 7 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture7_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture7_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture7_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -453,17 +458,18 @@ clusters_S7_Td0 <- data.frame(S7_Td0_obj@meta.data$clust_names)
 row.names(clusters_S7_Td0) <- embed_names_S7_Td0
 write.csv(clusters_S7_Td0, file = paste0(OUT_DIR, "clusters_S7_Td0.csv"))
 
-# Capture 8 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture8_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+
+# Capture 8 ---------------------------------------------------------------
+IN_DIR <- "/capture8_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture8_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -535,15 +541,15 @@ write.csv(clusters_S7_Tm3, file = paste0(OUT_DIR, "clusters_S7_Tm3.csv"))
 
 # Capture 9 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture9_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture9_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture9_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -614,16 +620,15 @@ write.csv(clusters_S11_Td0, file = paste0(OUT_DIR, "clusters_S11_Td0.csv"))
 
 
 # Capture 10 ---------------------------------------------------------------
-
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture10_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture10_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture10_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -695,15 +700,15 @@ write.csv(clusters_S11_Tm3, file = paste0(OUT_DIR, "clusters_S11_Tm3.csv"))
 
 # Capture 11 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture11_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture11_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture11_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -776,15 +781,15 @@ write.csv(clusters_S3_Td0, file = paste0(OUT_DIR, "clusters_S3_Td0.csv"))
 
 # Capture 12 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture12_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture12_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture12_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -857,15 +862,15 @@ write.csv(clusters_S3_Tm3, file = paste0(OUT_DIR, "clusters_S3_Tm3.csv"))
 
 # Capture 13 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture13_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture13_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture13_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
@@ -937,15 +942,15 @@ write.csv(clusters_S18_Td0, file = paste0(OUT_DIR, "clusters_S18_Td0.csv"))
 
 # Capture 14 ---------------------------------------------------------------
 
-IN_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/capture14_output/velocyto/"
-OUT_DIR <- "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/cellRank/wVelocity_input/"
+IN_DIR <- "/capture14_output/velocyto/"
+OUT_DIR <- "wVelocity_input/"
 
 #Read in data
 ldat <- read.loom.matrices(paste0(IN_DIR, "capture14_output.loom"))
 emat <- ldat$spliced
 nmat <- ldat$unspliced
 
-seurat_obj <- readRDS(file = "label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
+seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
 DefaultAssay(seurat_obj) <- "RNA"
 
 
