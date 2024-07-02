@@ -4,8 +4,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library("ggplot2")
 library ("DESeq2")
 library(statmod)
@@ -19,36 +17,34 @@ library(dplyr)
 library("gg.gap")
 library("stringr")
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-OUT_DIR <- "MASH_emmreml_downstream/gsea_padj_plots/"
+# In this script we make a preliminary heatmap to summarize the gsea findings 
+
+# setup -----------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream")
+OUT_DIR <- "gsea_padj_plots/"
 dir.create(OUT_DIR)
 
-
 # Read in gsea results for all clusters  -----------------------
-
 clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
-
 for(i in 1:length(clusters)){
   name <- clusters[i]
-  gsea_data <- read.csv(file=paste0("MASH_emmreml_downstream/gsea_padj/NOT_SORTED_gsea_result_",name,"_NO_correlations_with_custom"), header=TRUE)
+  gsea_data <- read.csv(file=paste0("gsea_padj/NOT_SORTED_gsea_result_",name,"_NO_correlations_with_custom"), header=TRUE)
   assign(paste0(name,"_data"), gsea_data)
 }
-
 
 gsea_result_list <- list(HSC_a_data, HSC_b_data, CMP_a_data, CMP_b_data, CMP_c_data, GMP_b1_data, GMP_b2_data, MEP_a1_data, MEP_a2_data, MEP_a3_data, mixed_a_data, mixed_b_data, PreBNK_data)
 gsea_result_names <- list("HSC_a_data", "HSC_b_data", "CMP_a_data", "CMP_b_data", "CMP_c_data", "GMP_a_data", "GMP_b_data", "MEP_a_data", "MEP_b_data", "MEP_c_data", "MLP_a_data", "MLP_b_data", "PreBNK_data")
 
 
 # Subset out pathways with pval<0.05 --------------------------------------
-
 for(i in 1:length(gsea_result_list)){
   name <- gsea_result_names[i]
   dat <- gsea_result_list[[i]]
   dat_subset <- subset(dat, dat$pval<=0.05)
   assign(paste0(name,"_sig"),dat_subset)
 }
-
 gsea_sig_subset_list <- list(HSC_a_data_sig, HSC_b_data_sig, CMP_a_data_sig, CMP_b_data_sig, CMP_c_data_sig, GMP_a_data_sig, GMP_b_data_sig, MEP_a_data_sig, MEP_b_data_sig, MEP_c_data_sig, MLP_a_data_sig, MLP_b_data_sig, PreBNK_data_sig)
+
 
 # Make a data frame combining results across all conditions ---------------
 pathways_all <- vector()
@@ -156,7 +152,6 @@ df_combined <- data.frame(
 )
 colnames(df_combined) <- c("X","Y","NES","pval", "padj", "celltype", "pathway_name")
 
-
 NES_upd_combined <- vector(length=length(df_combined$NES))
 
 for (i in 1:length(df_combined$NES)){
@@ -182,13 +177,10 @@ for (i in 1:length(df_combined$NES)){
 padj_sig <- rep(0, length(df_combined$padj))
 padj_sig[which(df_combined$padj <= 0.1)] <- 1
 
-
-
 df_combined_upd1 <- data.frame(cbind(df_combined, NES_upd_combined))
 df_combined_upd <- data.frame(cbind(df_combined_upd1, padj_sig))
 df_combined_upd$celltype_fill <- df_combined_upd$celltype
 df_combined_upd$celltype_fill[which(NES_upd_combined==0)] <- "none"
-
 
 celltype_color <- df_combined_upd$celltype_fill
 celltype_color[which(padj_sig == 0)] <- "none"
@@ -206,14 +198,15 @@ p <- ggplot(df_combined_upd, aes(x=X, y=Y, fill=celltype_fill)) + geom_tile(col=
   scale_y_discrete(expand=c(0,0), limits = df_combined_upd$pathway_name[1:length(unique(df_combined_upd$pathway_name))], labels=df_combined_upd$pathway_name[1:length(unique(df_combined_upd$pathway_name))]) +  theme(axis.text.x = element_text( color="black", angle=45, hjust=1))+
   labs(title = "Gene set enrichment analysis",x="",y = "") + scale_size(range=c(0,5), guide=NULL) + theme(axis.text.y = element_text(colour=df_pval_final$labs)) + theme(legend.position="none")
 
-
 saveRDS(p, file=paste0(OUT_DIR,"Figure_2B_gsea.rds"))
 
 
 
+########
+# PCA  #
+########
 
-
-# PCA where non-significant NES values are set to zero --------------------
+# Here we make a PCA that is based on gsea results for each cluster -----------------------------------
 
 set.seed(831)
 pca_data <- df_pval_final[,which(grepl("data", colnames(df_pval_final))==TRUE)]
