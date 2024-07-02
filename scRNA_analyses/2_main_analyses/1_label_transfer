@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library(ggplot2)
 library(cowplot)
 library(reticulate)
@@ -21,12 +19,15 @@ library(sctransform)
 library(data.table)
 library(Nebulosa)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited")
+setwd("/scRNA_analyses/2_main_analyses/")
 OUT_DIR <- "label_transfer/"
 #dir.create(OUT_DIR)
 
-reference_BM <- readRDS(file=paste0("/project2/lbarreiro/users/Saideep/Mihai_grant_scrnaseq/actual_final.rds"))
 
+# Read in a reference set of HSPC cells with cluster labels ----------------------------------------------------
+reference_BM <- readRDS(file=paste0("actual_final.rds"))
+
+# Process the reference data ----------------------------------------------------------
 cd34 = subset(reference_BM, orig.ident == "CD34")
 DefaultAssay(cd34) = "RNA"
 DimPlot(cd34, group.by = "cd34_prediction")
@@ -67,32 +68,16 @@ print(DimPlot(cd34, group.by = "clust_names", cols = c('CMP'='#EEA236','GMP'='#5
 dev.off()
 
 
-query_BM <- readRDS(file=paste0("../Initial_processing_clustering_Seurat/clustering_all_genes_regress_individual/allCells_integrated_NO_CLUSTER_NAME_UNIQUE_IDs.rds"))
-
+# Load our processed and integrated Seurat object -----------------------------------------------
+query_BM <- readRDS(file=paste0("../1_data_processing_clustering/clustering_all_genes_regress_individual/allCells_integrated_NO_CLUSTER_NAME_UNIQUE_IDs.rds"))
 
 anchors <- FindTransferAnchors(reference = cd34, query = query_BM,
                                dims = 1:30, reference.reduction = "pca", reference.assay = "SCT", query.assay = "integrated")
 
 
 
-# 
-# ##Transfer data
-# for(i in 1:length(query_BM_list))
-# {
-#   predictions <- TransferData(anchorset = anchors_list[[i]], refdata = cd34$clust_names,
-#                               dims = 1:30)
-#   query_BM_list[[i]] <- AddMetaData(query_BM_list[[i]], metadata = predictions)
-# }
-# 
-# test <- query_BM_list[[1]]
-# test <- RunPCA(test, npcs = 30)
-# test <- RunUMAP(test, dims = 1:30, seed.use = 2020)
-# test <- FindNeighbors(test, dims = 1:20)
-# test <- FindClusters(test, resolution = 0.5)
-# DimPlot(test, group.by = "seurat_clusters")
 
-
-##UMAP projection
+# UMAP projection ---------------------------------------------------------------------
 cd34 <- RunUMAP(cd34, dims = 1:30, reduction = "pca", return.model = TRUE,  seed.use = 2)
 DimPlot(cd34, group.by = "clust_names", cols = c('CMP'='#EEA236','GMP'='#5CB85C','HSC'='#D43F3A','MEP'='#9632B8','PreBNK'='#357EBD',
                                                  'mixed'='#46B8DA'))
@@ -152,8 +137,6 @@ p4 <- DimPlot(query_BM, reduction = "ref.umap", group.by = "clust_names", label 
               label.size = 3,repel = TRUE, cols = c('HSC_a'='#990033','HSC_b'='#991A00','CMP_a'='#FFC20A','CMP_b'='#FFD147','CMP_c'='#CC9900',
                                                      'GMP_b1'='#33CC00', 'GMP_b2' ='#99CC00', 'MEP_a1'='#990080', 'MEP_a2'='#990080', 'MEP_a3'='#990080',
                                                     'mixed_a'='#46B8DA', 'mixed_b'='#5DB1DD', 'PreBNK'='#1A0099','unknown1'='#A9A9A9','unknown2'='#A9A9A9')) + NoLegend() + ggtitle("Seurat clusters labelled")
-
-
 
 pdf(paste0(OUT_DIR,"ref_query_UMAP_seurat_clusters_labelled.pdf"), width=10, height=5)
 p1 + p4
@@ -225,6 +208,7 @@ pdf(paste0(OUT_DIR,"original_shape_query_UMAP_seurat_clusters_labelled.pdf"), wi
 p6
 dev.off()
 
+
 ##ggplot version of original shape UMAP with alternate colors
 query_BM <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 
@@ -250,13 +234,11 @@ ggplot(embed_query_BM, aes(x=UMAP_1, y=UMAP_2, color=cluster)) + geom_point(aes(
 scale_color_manual(name= "", values=myColorScale)
 dev.off()
 
+
 #save same plot as RDS
 p <- ggplot(embed_query_BM, aes(x=UMAP_1, y=UMAP_2, color=cluster)) + geom_point(aes(color=cluster), alpha=0.6) + theme_classic() + theme(legend.position="none")+
   scale_color_manual(name= "", values=myColorScale)
-
 saveRDS(p, file=paste0(OUT_DIR,"Figure_1C_UMAP.rds"))
-
-
 
 
 # Plot cell type specific markers -----------------------------------------
@@ -405,35 +387,15 @@ png(paste0(OUT_DIR,"HSPC_markers_heatmap.png"), units="in", width=5, height=4, r
 DotPlot(query_BM, features = markers_plot, dot.min = 0, dot.scale = 2) + NoLegend()
 dev.off()
 
-# find all markers of HSCs
-HSCa.markers <- FindMarkers(query_BM, ident.1 = 'HSC_a', min.pct = 0.25)
-write.csv(HSCa.markers, file=paste0(OUT_DIR, "HSCa_markers_all.csv"))
-HSCa.markers <- read.csv(file=paste0(OUT_DIR, "HSCa_markers_all.csv"))
 
-png(paste0(OUT_DIR,"HSC_markers_HOXA9.png"), units="in", width=5, height=4, res=350)
-FeaturePlot(query_BM, features = c("HOXA9"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
-dev.off()
-
-png(paste0(OUT_DIR,"HSC_markers_ACE.png"), units="in", width=5, height=4, res=350)
-FeaturePlot(query_BM, features = c("ACE"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
-dev.off()
-
-png(paste0(OUT_DIR,"HSC_markers_DST.png"), units="in", width=5, height=4, res=350)
-FeaturePlot(query_BM, features = c("DST"), reduction = "umap", cols=c('lightgrey', '#EF5350'))
-dev.off()
-
-# find all markers of CMP_b
-CMPb.markers <- FindMarkers(query_BM, ident.1 = 'CMP_b', min.pct = 0.25)
-
-CMPb.markers_pos <- FindMarkers(query_BM, only.pos = TRUE, ident.1 = 'CMP_b', min.pct = 0.25)
-write.csv(CMPb.markers_pos, file=paste0(OUT_DIR, "CMPb_markers_pos.csv"))
-
-#Save merged object with UNIQUE ID labels
+# Save merged object with UNIQUE ID labels ------------------------------------------------------------
+# This is the FINAL Seurat object that is used for all downstream analyses
 saveRDS(query_BM, file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 
-query_BM <- readRDS(file=paste0(OUT_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 
-#Determine the number of total cells in each cluster
+# BELOW IS CODE FOR QC AND OTHER STATS -----------------------------------------------------
+
+# Determine the number of total cells in each cluster -----------------------------------------------------
 meta <- query_BM@meta.data
 length(which(meta$clust_names == 'HSC_a')) #9637
 length(which(meta$clust_names == 'HSC_b')) #10953
@@ -449,7 +411,7 @@ length(which(meta$clust_names == 'MLP_a')) #5153
 length(which(meta$clust_names == 'MLP_b')) #3837
 length(which(meta$clust_names == 'PreBNK')) #3371
 
-# Determine the number of cells from each sample in each cluster ----------
+# Determine the number of cells from each sample in each cluster -------------------------------
 allCells_integrated <- query_BM
 DefaultAssay(allCells_integrated) <- "integrated"
 
@@ -495,6 +457,7 @@ cell_df_list <- list(HSC_a_df, HSC_b_df, CMP_a_df, CMP_b_df, CMP_c_df, GMP_b1_df
 clusters <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK", "unknown1", "unknown2")
 
 
+
 # Determine the fold change in cell nums between Td0 and Tm3 --------------
 
 for(i in 1:length(allCells_by_cluster_list)) 
@@ -529,11 +492,11 @@ for(i in 1:length(allCells_by_cluster_list))
   
   print(i)
 }
-
 cell_FC_df_list <- list(HSC_a_FC_df, HSC_b_FC_df, CMP_a_FC_df, CMP_b_FC_df, CMP_c_FC_df, GMP_b1_FC_df, GMP_b2_FC_df, MEP_a1_FC_df, MEP_a2_FC_df, MEP_a3_FC_df, mixed_a_FC_df, mixed_b_FC_df, PreBNK_FC_df, unknown1_FC_df, unknown2_FC_df)
 
 
-#Get names of samples with fewer than 20 cells in the cluster (filtered in analysis 5-10  )
+
+# Get names of samples with fewer than 20 cells in the cluster (filtered in analysis 5-10  ) -------------------------------
 for(i in 1:length(clusters))
 {
   df <- cell_df_list[[i]]
@@ -547,7 +510,6 @@ filter_20_list <- readRDS(file=paste0(OUT_DIR,"filter_20_list.rds"))
 
 
 # Get names of samples with 4-fold difference in cell nums between Td0 and Tm3 --------
-
 for(i in 1:length(clusters))
 {
   df <- cell_FC_df_list[[i]]
