@@ -19,6 +19,9 @@ library(ashr)
 library(mashr)
 library(dplyr)
 
+
+# The purpose of this code is to make a bargraph that shows the number of significant genes within each HSPC cluster
+
 setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream/")
 OUT_DIR <- c("DE_genes_bargraphs/")
 dir.create(OUT_DIR)
