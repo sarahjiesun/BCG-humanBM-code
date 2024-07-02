@@ -17,7 +17,7 @@ col = "#99CC00"
 show_col(col)
 
 #### 1 Create a a HSC specific UMAP to emphasize the HSC clusters in the PHATE clusters 
-pdata_file <- file.path("/Users/raguirreg/Projects/UChicago/BCG_CSF/analysis/01_phateR/plots/FINAL_phates_meta_knn7_gamma0.5_t10.rds")
+pdata_file <- file.path("../FINAL_phates_meta_knn7_gamma0.5_t10.rds")
 pdata <- readRDS(pdata_file)
 
 hsc_phate <- pdata %>% 
