@@ -1,4 +1,4 @@
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
+
 library(ggplot2)
 library (DESeq2)
 library(statmod)
@@ -13,20 +13,20 @@ library(ashr)
 library(mashr)
 library(dplyr)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/") 
-
-OUT_DIR <- "HSC_subcluster_analysis/5_mash/"
+# setup -------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses/") 
+OUT_DIR <- "5_mash/"
 dir.create(OUT_DIR)
 
-# read in results for each cluster ----------------------------------------
 
-#exclude cluster c9 due to not enough samples 
+# read in results for each cluster ----------------------------------------
+# exclude cluster c9 due to not enough samples 
 clusters <- c("0", "1", "2", "3", "4", "5", "6", "7", "8")
 
 genes_common <- vector()
 for(i in 1:length(clusters)){
   name <- clusters[i]
-  dat <- read.csv(file=paste0("HSC_subcluster_analysis/4_emmreml_betas/", name, "_res_full.csv"))
+  dat <- read.csv(file=paste0("4_emmreml_betas/", name, "_res_full.csv"))
   if(i == 1)
   {
     genes_common <- dat$X
@@ -68,7 +68,6 @@ row.names(SE_table) <- genes_common
 
 
 # Run MASH with correlations ----------------------------------------------
-
 data = mash_set_data(beta_table, SE_table)
 
 # estimate null correlations and add to data (decreases number of false positive from my test)
@@ -89,10 +88,8 @@ print(names(U.c))
 #mash
 m_corr   = mash(data_V, c(U.c,U.ed))
 
-
 get_significant_results(m_corr)
 print(length(get_significant_results(m_corr)))
-
 
 ## write posterior outs
 write.table(get_lfsr(m_corr), paste0(OUT_DIR,"mash_results/lfsr_wcorrelations_output.txt"), quote = FALSE)
@@ -115,14 +112,11 @@ U.ed = cov_ed(data, U.pca, subset=strong)
 U.c = cov_canonical(data)
 print(names(U.c))
 
-
 #mash
 m   = mash(data, c(U.c,U.ed))
 
-
 get_significant_results(m)
 print(length(get_significant_results(m)))
-
 
 ## write posterior outs
 write.table(get_lfsr(m), paste0(OUT_DIR,"mash_results/lfsr_output.txt"), quote = FALSE)
