@@ -12,20 +12,21 @@ library(Seurat)
 library(sctransform)
 library(data.table)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited")
+# In this script we select all cells that were labelled as HSC_a (new lab HSC c1) or HSC_b (new lab HSC c2) and we re-cluster the cells to form high-resolution HSC subclusters
 
-IN_DIR <- "label_transfer/"
-OUT_DIR <- "../Analysis_Raul/HSC_subcluster_analysis/0_SCT_cluster/"
+# setup ------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/HSC_subcluster_analyses")
+IN_DIR <- "../label_transfer/"
+OUT_DIR <- "0_SCT_cluster/"
 dir.create(OUT_DIR)
 
 
 # Read in final labeled obj ----------------------------------------------
-
 #S9 Td0 needs to be filtered out from this object!
 all <- readRDS(file=paste0(IN_DIR,"allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 DefaultAssay(all) <- "RNA"
 
-#Filter out S9 Td0
+#Filter out S9 Td0 
 unique_ids <- unique(all$UNIQUE_ID)
 unique_ids = unique_ids[!(unique_ids %in% "SNG-LB-SS-1S-RS-S9-CD34neg_S8_R1_001_Td0_BCG" )]
 all<- subset(
@@ -33,20 +34,18 @@ all<- subset(
   subset = UNIQUE_ID %in% unique_ids
 )
 
-
 # Get cell barcodes of all HSCs -------------------------------------------
 all_meta <- all@meta.data
-
 HSC_barcodes <- row.names(all_meta)[which(all_meta$clust_names %in% c('HSC_a', 'HSC_b'))]
 
-# read in merged_filtered seurat object from initial processing --------------------------
 
-mergeAllCells <- readRDS(file = "../Initial_processing_clustering_Seurat/merged_filtered_seuratObject.rds")
+# read in merged_filtered seurat object from initial processing --------------------------
+# We will perform cluster on the HSCs from this object ------------------------------------
+mergeAllCells <- readRDS(file = "../../1_data_processing_clustering/merged_filtered_seuratObject.rds")
 mergeAllCells$batchID <- factor(mergeAllCells$batchID)
 
-##Subset to keep only HSC barcodes
+# Subset to keep only HSC barcodes ------------------------------------------------
 mergeAllCells$temp <- row.names(mergeAllCells@meta.data)
-
 HSC_obj <- subset(
   x = mergeAllCells,
   subset = temp %in% HSC_barcodes
@@ -56,7 +55,6 @@ HSC_obj$temp <- NULL
 
 
 # Split the merged object by timepoint ------------------------------------
-
 HSC_obj_list <- SplitObject(HSC_obj, split.by = "timepoint")
 #   Td0     Tm3
 #  8,480   12,110
@@ -66,7 +64,6 @@ Td0 <- HSC_obj_list[[2]]
 
 
 # Split Tm3 into CTL and BCG ----------------------------------------------
-
 Tm3_list <- SplitObject(Tm3, split.by = "vaccination")
 #   BCG       CTL
 #  9,144     2,966
@@ -76,22 +73,18 @@ Tm3_CTL <- Tm3_list[[2]]
 
 
 # Create final seurat object list split 3 ways ----------------------------
-
 mergeAllCells_list <- c(Td0, Tm3_BCG, Tm3_CTL)
 
 
 # Run scTransform separately  ---------------------------------------------
-
 #scTransform replaces NormalizeData(), ScaleData(), and FindVariableFeatures(); FindvariableFeatures() identifies features that are outliers on a mean-variance plot
 mergeAllCells_list <- lapply(X = mergeAllCells_list, FUN = function(x) {
   x <- SCTransform(x, vars.to.regress = c("percent.mt","batchID"))
 })
-
 saveRDS(mergeAllCells_list, file = paste0(OUT_DIR,"HSC_obj_afterSCTransform.rds"))
 
 
 # Integration -------------------------------------------------------------
-
 features <- SelectIntegrationFeatures(object.list = mergeAllCells_list, nfeatures = 3000)
 mergeAllCells_list <- PrepSCTIntegration(object.list = mergeAllCells_list, anchor.features = features)
 
