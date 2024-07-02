@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library("ggplot2")
 library ("DESeq2")
 library(statmod)
@@ -20,20 +18,19 @@ library(data.table)
 library(ggplot2)
 library(msigdbr)
 
+# In this code a GSEA is performed using betas and log2FC values for genes within each HSPC cluster --------------------
+
+# setup -------------------------------------------------
 set.seed(831)
-
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-
-OUT_DIR <- c("MASH_emmreml_downstream/gsea_padj/")
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream")
+OUT_DIR <- c("gsea_padj/")
 dir.create(OUT_DIR)
 
 
 
-
-# Read in posterior means (WITHOUT correlations and WITH custom matrices) and lfsr ----------
-
-PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
-lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+# Read in posterior means and lfsr ----------
+PM <- read.table(file=paste0("../MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+lfsr <- read.table(file=paste0("../MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
 
 clusters <- colnames(PM)
 for(i in 1:length(clusters)){
@@ -47,8 +44,8 @@ for(i in 1:length(clusters)){
   print(i)
 }
 
-
 df_list <- list(HSC_a_table, HSC_b_table, CMP_a_table, CMP_b_table, CMP_c_table, GMP_b1_table, GMP_b2_table, MEP_a1_table, MEP_a2_table, MEP_a3_table, mixed_a_table, mixed_b_table, PreBNK_table)
+
 
 
 # Gene set enrichment of Hallmark pathways --------------------------------
