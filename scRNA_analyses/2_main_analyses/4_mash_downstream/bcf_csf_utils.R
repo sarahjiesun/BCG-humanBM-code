@@ -1,13 +1,11 @@
 #https://www.kisungyou.com/Rdimtools/reference/nonlinear_PHATE.html
 
-
 #R version 4.1.0 loaded
 #rstudio/1.4
 #geos/3.9.1 loaded
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 
 library(here)
 library(future)
