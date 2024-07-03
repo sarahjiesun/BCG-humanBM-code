@@ -16,12 +16,11 @@ library(ggplot2)
 library(ggrepel)
 library(stringr)
 
-
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/") 
-
-IN_DIR <- "cellRank/wVelocity_input/"
-IN_DIR2 <- "cellRank/terminal_state_probs/"
-OUT_DIR <- "cellRank/terminal_state_analysis_output/"
+# setup -------------------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/cellRank/") 
+IN_DIR <- "wVelocity_input/"
+IN_DIR2 <- "terminal_state_probs/"
+OUT_DIR <- "terminal_state_analysis_output/"
 dir.create(OUT_DIR)
 
 
