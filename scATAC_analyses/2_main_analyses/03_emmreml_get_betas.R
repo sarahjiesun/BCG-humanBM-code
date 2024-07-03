@@ -1,6 +1,5 @@
 #R version 4.1.0
 #install.packages("EMMREML")
-#.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 library(ggplot2)
 library(statmod)
 library(RColorBrewer)
@@ -14,9 +13,9 @@ library(dplyr)
 
 
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE")
+setwd("/scATAC_analyses/2_main_analyses")
 OUT_DIR <- paste0("0X_test_filter_thresholds/")
-#dir.create(OUT_DIR)
+dir.create(OUT_DIR)
 
 # Setup -------------------------------------------------------------------
 
