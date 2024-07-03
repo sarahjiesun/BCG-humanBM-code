@@ -6,6 +6,9 @@ library(stringr)
 library(readxl)
 library(data.table)
 
+# Here we run an elastic net model to predict cytokine secretion using DR genes within HSCs 
+
+
 # setup -------------------------------------------------------
 set.seed(831)  # Set seed for reproducibility
 ## Datatype (set to RNA or ATAC)
@@ -27,7 +30,7 @@ meta_data <- read.csv(file="../all_samples_meta_data.csv")
 
 
 #Load in a table of RNA or ATAC logFC values for each gene/peak (columns are donors, rows are genes/peaks)
-logfc_mat_final_list <- readRDS(file=paste0("../MASH_emmreml_downstream/DE_genes_cytokines_correlation/logfc_mat_final_list_DR_only.rds"))
+logfc_mat_final_list <- readRDS(file=paste0("../4_mash_downstream/DE_genes_cytokines_correlation/logfc_mat_final_list_DR_only.rds"))
 #choose the celltype
 cts <- logfc_mat_final_list[["HSC_a"]]
 cts <- t(cts)
@@ -35,7 +38,7 @@ cts <- t(cts)
 
 
 #Load in cytokine data and format
-cytokine_data <- data.frame(fread("../../Analysis12_label_transfer_emmreml_edited/PBMC_cytokine_data_CHM.txt"))
+cytokine_data <- data.frame(fread("../PBMC_cytokine_data_CHM.txt"))
 cyt_subset1 <- subset(cytokine_data, as.character(cytokine_data$Donor) %in% colnames(cts))
 cyt_subset2 <- subset(cyt_subset1, as.character(cyt_subset1$Timepoint) == "D90")
 #final cytokine scores
