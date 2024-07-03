@@ -14,14 +14,15 @@ library(sctransform)
 library(data.table)
 library(VennDiagram)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-OUT_DIR <- "MASH_emmreml_downstream/DE_genes_cytokines_correlation/"
+# setup ---------------------------------------------------------
+setwd("/scRNA_analyses/2_main_analyses/4_mash_downstream/")
+OUT_DIR <- "DE_genes_cytokines_correlation/"
 dir.create(OUT_DIR)
 
 
 # Read in cytokine data ---------------------------------------------------
 
-cytokine_data <- data.frame(fread("../Analysis12_label_transfer_emmreml_edited/PBMC_cytokine_data_CHM.txt"))
+cytokine_data <- data.frame(fread("../PBMC_cytokine_data_CHM.txt"))
 
 # Read in the corrected expression matrices -------------------------------
 
