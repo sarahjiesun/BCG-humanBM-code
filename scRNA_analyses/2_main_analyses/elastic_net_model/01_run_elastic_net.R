@@ -6,14 +6,13 @@ library(stringr)
 library(readxl)
 library(data.table)
 
+# setup -------------------------------------------------------
 set.seed(831)  # Set seed for reproducibility
-
 ## Datatype (set to RNA or ATAC)
 data <- "RNA"
 
-
 ## Set directory structure
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/elastic_net_model/")
+setwd("/scRNA_analyses/2_main_analyses/elastic_net_model/")
 out_dir <- paste0("EN_outputs/")
 dir.create(out_dir)
 
@@ -24,7 +23,7 @@ pred_out = file.path(paste0(out_dir,"predicted"))
 weights_out = file.path(paste0(out_dir,"weights"))
 
 #Load in RNA meta data
-meta_data <- read.csv(file="../../Analysis12_label_transfer_emmreml_edited/all_samples_meta_data.csv")
+meta_data <- read.csv(file="../all_samples_meta_data.csv")
 
 
 #Load in a table of RNA or ATAC logFC values for each gene/peak (columns are donors, rows are genes/peaks)
