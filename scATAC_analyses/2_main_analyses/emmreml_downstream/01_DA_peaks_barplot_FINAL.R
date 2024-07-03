@@ -5,8 +5,6 @@
 #hdf5/1.12.0 loaded 
 #cmake loaded
 
-.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
-
 library("ggplot2")
 library ("DESeq2")
 library(statmod)
@@ -19,8 +17,8 @@ library(cowplot)
 library(dplyr)
 
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE")
-out_dir <- "emmreml_downstream/DA_peaks_barplot/"
+setwd("/scATAC_analyses/2_main_analyses/emmreml_downstream")
+out_dir <- "DA_peaks_barplot/"
 
 source("bcf_csf_utils.R")
 
@@ -39,7 +37,7 @@ theme_set(theme_minimal_grid() +
 )
 
 
-barplot_file <- "emmreml_downstream/DA_peaks_barplot/Figure_4C_barplot.rds"
+barplot_file <- "DA_peaks_barplot/Figure_4C_barplot.rds"
 barplot <- readRDS(barplot_file)
 
 
