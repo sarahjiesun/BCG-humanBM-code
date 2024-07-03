@@ -8,16 +8,18 @@ library(corrplot)
 library(RColorBrewer)
 library(dplyr)
 
+# Here we plot the results of running elastic net using DR genes within HSC to predict each cytokine
+
+# setup ----------------------------------------------------------
 my_colors <- pnw_palette(name="Starfish",n=7,type="discrete")
 my_colors_Sarah <- c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948", "#B07AA1")
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul")
-OUT_DIR <- "elastic_net_model/"
+setwd("/scRNA_analyses/2_main_analyses/elastic_net_model/")
+OUT_DIR <- "elastic_net_model_plots/"
 
-in_dir <- "/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis_Raul/elastic_net_model/EN_outputs/"
+in_dir <- "EN_outputs/"
 ## only load selected models
 models <- c("IL10_FC_score", "IL1B_FC_score", "IL1RA_FC_score", "IL6_FC_score", "IFNA_FC_score", "IFNG_FC_score", "TNF_FC_score")
-
 
 alpha=c(0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
 
@@ -27,6 +29,8 @@ data_models_list <-list()
 
 ## load metadata
 metadata <- read.table(paste0(in_dir,"../cyt_FC_final.txt"))
+
+
 
 for (m in 1:length(models)){
   print(models[m])
@@ -80,36 +84,6 @@ for (m in 1:length(models)){
     test <- cor.test(corr_df[,"real_value"], corr_df[,i], method = c("spearman"))
     correlation_results$R[i] = test$estimate
     correlation_results$P.value[i] = test$p.value
-    
-    ## individual IL1B plot
-    meta_data <- read.csv(file="../Analysis12_label_transfer_emmreml_edited/all_samples_meta_data_limma.csv")
-    treatment <- vector(length=length(row.names(corr_df)))
-    donor_name <- vector(length=length(row.names(corr_df)))
-    for(d in 1:length(row.names(corr_df)))
-    {
-      #GET BCG/CTL info for each donor 
-      treatment[d] <- as.character(unique(meta_data$group[which(meta_data$donor == row.names(corr_df)[d])]))
-      donor_name[d] <- as.character(unique(meta_data$donor[which(meta_data$donor == row.names(corr_df)[d])]))
-    }
-    df_scatter_individual <- data.frame(
-      real <- corr_df[,"real_value"],
-      pred <- corr_df[,i],
-      g <- treatment,
-      dn <- donor_name
-    )
-    
-    ann_text<-data.frame(
-      x = 0.9, y = 1.8,
-      label = paste0("Spearman corr = ",round(correlation_results$R[i],3),"\npvalue = ",round(correlation_results$P.value[i],4))
-    )
-    
-    p2 <- ggplot(df_scatter_individual, aes(x=real, y=pred)) + geom_point(shape=21, size=4, fill="red", alpha=0.7, color="grey") + theme_classic()+
-      geom_smooth(method=lm, color="grey", alpha=0.2, fullrange=TRUE, size=1) + labs(x='Real IL1B FC', y="Predicted IL1B FC")+
-      labs(fill="Group")+ geom_text(data=ann_text, aes(x=1, y=1.65, label=label))
-    
-    tiff(paste0(OUT_DIR, "RNA_DRgenes_il1b_HSC_a0_scatter_nocol.tiff"), units="in", width=3.5, height=3, res=250)
-    p2
-    dev.off()
   }
   
   correlation_results$alpha <- colnames(corr_df[1:(ncol(corr_df)-1)])
@@ -140,7 +114,7 @@ p_group[which(all_results_no_negs$P.value < 0.05)] <- "sig"
 p_group[which(all_results_no_negs$R == 0)] <- "none"
 all_results_no_negs$p_group <- p_group
 
-## plot
+# plot summary ------------------------------------------
 tiff(paste0(OUT_DIR, "RNA_DEgenes_HSCa_EN.tiff"), units="in", width=4, height=4, res=250)
 ggplot(all_results_no_negs, aes(x=alpha, y = R, group=model, color=p_group, fill=model))+
   geom_point(alpha = 1, position=position_dodge(width=.3), cex=3.4, shape=21, stroke=1) +   scale_fill_manual(values=my_colors_Sarah) +
@@ -155,7 +129,7 @@ dev.off()
 
 
 
-## plot il1b HSCa_a0
+# plot il1b HSCa_a0 (top result)  --------------------------------------------------------
 
 corr_df <- data_models_list[[2]]  ### IL1B
 correlation_results <- data.frame(R=numeric(ncol(corr_df)-1), P.value=numeric(ncol(corr_df)-1))
@@ -187,48 +161,8 @@ p2 <- ggplot(df_scatter_individual, aes(x=real, y=pred)) + geom_point(shape=21, 
   geom_smooth(method=lm, color="grey", alpha=0.2, fullrange=TRUE, size=1) + labs(title="DE genes-based IL1B prediction", x='Real IL1B FC', y="Predicted IL1B FC")+
   labs(fill="Group")
 
-# tiff(paste0(OUT_DIR, "RNA_DRgenes_il1b_HSC_a0_scatter_nocol.tiff"), units="in", width=3, height=3, res=250)
-# p2
-# dev.off()
-
 final_file <- file.path(OUT_DIR,paste0("RNA_DRgenes_il1b_HSC_a0_scatter_nocol.pdf"))
 ggsave(filename = final_file, plot = p2, height = 3, width = 3)
 
 
 
-
-## plot il1ra HSCa_a1
-
-corr_df <- data_models_list[[3]]  ### IL1RA
-correlation_results <- data.frame(R=numeric(ncol(corr_df)-1), P.value=numeric(ncol(corr_df)-1))
-test <- cor.test(corr_df[,"real_value"], corr_df[,11], method = c("spearman")) ## a0
-correlation_results$R[11] = test$estimate ### a0
-correlation_results$P.value[11] = test$p.value ### a0
-
-meta_data <- read.csv(file="../Analysis12_label_transfer_emmreml_edited/all_samples_meta_data_limma.csv")
-treatment <- vector(length=length(row.names(corr_df)))
-donor_name <- vector(length=length(row.names(corr_df)))
-for(d in 1:length(row.names(corr_df))){
-  #GET BCG/CTL info for each donor 
-  treatment[d] <- as.character(unique(meta_data$group[which(meta_data$donor == row.names(corr_df)[d])]))
-  donor_name[d] <- as.character(unique(meta_data$donor[which(meta_data$donor == row.names(corr_df)[d])]))
-}
-df_scatter_individual <- data.frame(
-  real <- corr_df[,"real_value"],
-  pred <- corr_df[,11],
-  g <- treatment,
-  dn <- donor_name
-)
-
-ann_text<-data.frame(
-  x = 0.9, y = 1.8,
-  label = paste0("Spearman corr = ",round(correlation_results$R[11],3),"\npvalue = ",round(correlation_results$P.value[11],4))
-)
-
-p2 <- ggplot(df_scatter_individual, aes(x=real, y=pred)) + geom_point(shape=21, size=3.5, fill="#925E9F", alpha=1, color="grey") + theme_lineplot()+
-  geom_smooth(method=lm, color="grey", alpha=0.2, fullrange=TRUE, size=1) + labs(x='Real IL1RA FC', y="Predicted IL1RA FC")+
-  labs(fill="Group")+ geom_text(data=ann_text, aes(x=1, y=1.65, label=label))
-
-tiff(paste0(OUT_DIR, "RNA_DRgenes_il1ra_HSC_a1_scatter_nocol.tiff"), units="in", width=3, height=3, res=250)
-p2
-dev.off()
