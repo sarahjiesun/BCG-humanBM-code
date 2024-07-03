@@ -8,9 +8,10 @@ library(stringr)
 library(textTinyR)
 library(pbapply)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis1_Clusters_harmony")
+# setup ----------------------------------------------------------------------------------------
+setwd("/scATAC_analyses/2_main_analyses")
 OUT_DIR <- "pseudobulk_clusters_harmony_all_combined/"
-#dir.create(OUT_DIR)
+dir.create(OUT_DIR)
 
 projBM <- loadArchRProject(path = "Unedited_with_Clusters_harmony_peaks_combined", force = FALSE, showLogo = TRUE)
 getAvailableMatrices(projBM)
