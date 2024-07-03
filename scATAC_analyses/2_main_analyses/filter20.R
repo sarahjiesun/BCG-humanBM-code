@@ -9,6 +9,8 @@ library(stringr)
 library(textTinyR)
 library(pbapply)
 
+# setup --------------------------------------------------------------
+setwd("/scATAC_analyses/2_main_analyses")
 OUT_DIR <- "filter20/"
 dir.create(OUT_DIR)
 
