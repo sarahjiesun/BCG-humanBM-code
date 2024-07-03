@@ -9,9 +9,9 @@ library(Seurat)
 # Load merged scRNAseq Seurat object with celltype labels -----------------
 
 
-merged_RNA <- readRDS(file = paste0("../../../../BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Initial_processing_clustering_Seurat/merged_filtered_seuratObject.rds"))
+merged_RNA <- readRDS(file = paste0("/scRNA_analyses/1_data_processing_clustering/merged_filtered_seuratObject.rds"))
 
-labeled_RNA <- readRDS(file=paste0("../../../../BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis10_label_transfer_small_clusters/label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
+labeled_RNA <- readRDS(file=paste0("/scRNA_analyses/2_main_analyses/label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds"))
 
 
 cell_label_unordered <- labeled_RNA$clust_names
