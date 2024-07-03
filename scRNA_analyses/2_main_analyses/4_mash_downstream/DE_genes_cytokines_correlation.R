@@ -24,23 +24,27 @@ dir.create(OUT_DIR)
 
 cytokine_data <- data.frame(fread("../PBMC_cytokine_data_CHM.txt"))
 
+
 # Read in the corrected expression matrices -------------------------------
+# create a list of expression tables of genes with lfsr < 0.1 ----------------------
 
 celltypes <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b", "PreBNK")
 data_genes <- vector()
+
 for(i in 1:length(celltypes)){
   c <- celltypes[i]
-  
-  data <- read.table(file=paste0("emmreml_betas/raw_expression/", c, "_raw_expression.txt"))
+  data <- read.table(file=paste0("../emmreml_betas/raw_expression/", c, "_raw_expression.txt"))
   data$X <- row.names(data)
-  #Get genes that are significant MASH no correlations with custom matrices
-  PM <- read.table(file=paste0("MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
-  lfsr <- read.table(file=paste0("MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
+  
+  # read in mash results 
+  PM <- read.table(file=paste0("../MASH/mash_results/posteriorMeans_wcustom.txt"), header=TRUE)
+  lfsr <- read.table(file=paste0("../MASH/mash_results/lfsr_wcustom_output.txt"), header=TRUE)
   
   DE_df <- data.frame(cbind(PM[,paste0(celltypes[i])], lfsr[,paste0(celltypes[i])]))
   row.names(DE_df) <- row.names(PM)
   colnames(DE_df) <- c("beta", "lfsr")
-  
+
+  # get genes with lfsr < 0.1
   DE_subset_genes <- row.names(subset(DE_df, DE_df$lfsr < 0.1))
   
   data_subset <- subset(data, data$X %in% DE_subset_genes)
@@ -51,10 +55,12 @@ for(i in 1:length(celltypes)){
 expression_data <- list(HSC_a, HSC_b, CMP_a, CMP_b, CMP_c, GMP_b1, GMP_b2, MEP_a1, MEP_a2, MEP_a3, mixed_a, mixed_b, PreBNK)
 expression_data_names <- c("HSC_a", "HSC_b", "CMP_a", "CMP_b", "CMP_c", "GMP_b1", "GMP_b2", "MEP_a1", "MEP_a2", "MEP_a3", "mixed_a", "mixed_b","PreBNK")
 
-
-meta_data <- read.csv(file="../Analysis12_label_transfer_emmreml_edited/all_samples_meta_data.csv")
+# read in meta data ---------------------------------------------------
+meta_data <- read.csv(file="../all_samples_meta_data.csv")
 meta_data$Sample <- gsub('-','\\.', meta_data$Sample)
 
+
+# Loop through each cell type to create a matrix of log2FC (D90-D0) values for each gene and donor --------------------------------
 
 Tm3_all <- c("SNG.LB.SS.1S.RS.S1.CD34neg_S1_R1_001_Tm3_BCG", "SNG.LB.SS.1S.RS.S2.CD34neg_S2_R1_001_Tm3_BCG", "SNG.LB.SS.1S.RS.S5.CD34neg_S4_R1_001_Tm3_BCG",
              "SNG.LB.SS.1S.RS.S6.CD34neg_S5_R1_001_Tm3_BCG", "SNG.LB.SS.1S.RS.S8.CD34neg_S7_R1_001_Tm3_BCG", "SNG.LB.SS.1S.RS.S9.CD34neg_S8_R1_001_Tm3_BCG",
@@ -122,7 +128,10 @@ for(k in 1:length(expression_data)){
   logfc_mat_final_list[[k]] <- logfc_mat_final
   names(logfc_mat_final_list)[k] <- expression_data_names[k]
   
-  
+
+
+  # record fold change cytokine secretion for each cytokine in matched samples 
+
   il10 <- vector(length=length(name_short))
   il1b <- vector(length=length(name_short))
   il1ra <- vector(length=length(name_short))
@@ -130,8 +139,7 @@ for(k in 1:length(expression_data)){
   ifna <- vector(length=length(name_short))
   ifng <- vector(length=length(name_short))
   tnfa <- vector(length=length(name_short))
-  
-  
+   
   for(i in 1:length(name_short))
   {
     cyt_subset1 <- subset(cytokine_data, as.character(cytokine_data$Donor) == name_short[i])
@@ -148,6 +156,7 @@ for(k in 1:length(expression_data)){
   
   cyt_mat <- cbind(il10, il1b, il1ra, il6, ifna, ifng, tnfa)
   row.names(cyt_mat) <- name_short
+
   
   count <- 1
   gene_name <- vector()
