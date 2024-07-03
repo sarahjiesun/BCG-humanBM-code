@@ -12,20 +12,17 @@ library(qvalue)
 library(dplyr)
 
 
-
+# setup -------------------------------------------------------------------
 setwd("/scATAC_analyses/2_main_analyses")
 OUT_DIR <- paste0("0X_test_filter_thresholds/")
 dir.create(OUT_DIR)
 
-# Setup -------------------------------------------------------------------
-
 # Import pseudobulk objects -----------------------------------------------
-filter_20_list <- readRDS(file=paste0("../analysis1_Clusters_harmony/filter20/filter_20_list.rds"))
+filter_20_list <- readRDS(file=paste0("filter20/filter_20_list.rds"))
 filter_20_index <- c(1,3,4,5,6,7,9,10,12,14,15,17,18,21,22,23,24)
 ##main cluster only
 clusters <- c("C1", "C3", "C4", "C5", "C6", "C7","C9", "C10", "C12", "C14", "C15", "C17", "C18",  "C21", "C22","C23", "C24")
 clusters_renamed <- c("unknown1", "CMP1", "CMP2", "HSC1", "HSC2", "MEP1","Pre-BNK", "GMP1","CLP", "MEP2", "MEP3", "CMP3", "MEP4", "CMP4", "CMP5", "GMP2", "GMP3")
-
 
 threshold <- 0
 
@@ -48,8 +45,8 @@ for(i in 1:length(clusters)){
     expression_threshold <- options[k]
     
     #### 1. Read and format pseudobulk data & meta_data
-    pseudobulk <- readRDS(file = paste0("../analysis1_Clusters_harmony/pseudobulk_clusters_harmony_all_combined/",name,"_pseudobulk.rds"))
-    meta_data <- read.csv(file="../analysis1_Clusters_harmony/meta_data_limma_betas_interaction.csv", header=TRUE)
+    pseudobulk <- readRDS(file = paste0("pseudobulk_clusters_harmony_all_combined/",name,"_pseudobulk.rds"))
+    meta_data <- read.csv(file="meta_data_limma_betas_interaction.csv", header=TRUE)
     meta_data$detailed_group=paste0(meta_data$group,"_",meta_data$timepoint)
     meta_data$group=factor(meta_data$group,levels=c("CTL","BCG"))
     
