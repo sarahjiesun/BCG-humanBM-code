@@ -1,5 +1,4 @@
 
-##RUN this code noninteractively with R on bigmem2 (NOT lbarreiro)
 library(ArchR)
 addArchRThreads(threads = 16) 
 addArchRGenome("hg38")
