@@ -1,6 +1,5 @@
 #R version 4.1.0
 #install.packages("EMMREML")
-#.libPaths("/project/lbarreiro/USERS/sarah/Rlibs_new")
 library(ggplot2)
 library(statmod)
 library(RColorBrewer)
@@ -13,8 +12,8 @@ library(qvalue)
 library(dplyr)
 
 
-
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE")
+# setup ------------------------------------------------------------
+setwd("/scATAC_analyses/2_main_analyses")
 OUT_DIR <- paste0("0X_analysis_test_filter_thresholds/")
 dir.create(OUT_DIR)
 IN_DIR <- paste0("0X_test_filter_thresholds/res_full/")
@@ -25,7 +24,6 @@ clusters_renamed <- c("unknown1", "CMP1", "CMP2", "HSC1", "HSC2", "MEP1","Pre-BN
 
 
 for(i in 1:length(clusters)){
-  
   option <- c(1, 1.25, 1.5, 1.75, 2, 2.25, 2.5)
   num_original_peaks <- vector(length=length(option))
   num_original_DA_peaks <- vector(length=length(option))
@@ -37,7 +35,7 @@ for(i in 1:length(clusters)){
   overlap_tested_peaks_percent <- vector(length=length(option))
   overlap_origDA_peaks_tested <- vector(length=length(option))
   
-  original_data <- read.csv(file=paste0("../analysis1_Clusters_harmony/emmreml_betas_Jedited/",clusters_renamed[i],"_res_full.csv"))
+  original_data <- read.csv(file=paste0("emmreml_betas_Jedited/",clusters_renamed[i],"_res_full.csv"))
   original_sig_peaks <- original_data$X[which(original_data$BH_corrected < 0.1)]
   original_tested_peaks <- original_data$X
   for(k in 1:length(option)){
