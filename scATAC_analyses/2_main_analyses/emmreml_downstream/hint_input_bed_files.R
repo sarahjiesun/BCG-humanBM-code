@@ -8,11 +8,12 @@ library(stringr)
 library(textTinyR)
 library(pbapply)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE")
-OUT_DIR <- "emmreml_downstream/HINT_temp/hint_input_bed_files/"
+# setup -----------------------------------------------------------------------------------
+setwd("/scATAC_analyses/2_main_analyses/emmreml_downstream")
+OUT_DIR <- "hint_input_bed_files/"
 dir.create(OUT_DIR)
 
-projBM <- loadArchRProject(path = "../analysis1_Clusters_harmony/Unedited_with_Clusters_harmony_peaks_combined", force = FALSE, showLogo = TRUE)
+projBM <- loadArchRProject(path = "../Unedited_with_Clusters_harmony_peaks_combined", force = FALSE, showLogo = TRUE)
 getAvailableMatrices(projBM)
 
 
@@ -60,7 +61,7 @@ peaks_all <- vector()
 for(i in 1:length(clusters)){
   name <- clusters[i]
   
-  res_full <- read.csv(file=paste0("0X_test_filter_thresholds/res_full/",name,"_res_full_option",options[i] ,".csv"), header=TRUE)
+  res_full <- read.csv(file=paste0("../0X_test_filter_thresholds/res_full/",name,"_res_full_option",options[i] ,".csv"), header=TRUE)
   peaks_sig <- subset(res_full, res_full[,"BH_corrected"] < 0.1)$X
   
   peakmat_subset <- subset(df_peakmat, df_peakmat$rownames %in% peaks_sig)
