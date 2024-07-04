@@ -28,7 +28,7 @@ output = [
 ]
 
 
-homer_annotate = "/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined.sbatch"
+homer_annotate = "/scATAC_analyses/2_main_analyses/emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined.sbatch"
 
 import os
 for i in range(0,6):
