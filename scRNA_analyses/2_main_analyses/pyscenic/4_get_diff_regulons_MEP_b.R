@@ -16,7 +16,7 @@ library(SCopeLoomR)
 library(doRNG)
 library(ggrepel)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic")
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
 OUT_DIR <- "get_diff_regulons_outs/"
 dir.create(OUT_DIR)
 
@@ -115,9 +115,7 @@ row.names(logfc_mat) <- substr(row.names(logfc_mat),1,nchar(row.names(logfc_mat)
 
 pval <- vector(length=length(row.names(logfc_mat)))
 pval_wilcox <- vector(length=length(row.names(logfc_mat)))
-plot_list <- list()
 tf_name <- vector()
-plot_count <- 1
 for(i in 1:length(row.names(logfc_mat)))
 {
   values <- logfc_mat[i, ]
