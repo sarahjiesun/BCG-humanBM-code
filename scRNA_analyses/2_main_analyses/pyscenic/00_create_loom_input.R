@@ -15,7 +15,7 @@ library(SCENIC)
 library(SCopeLoomR)
 library(doRNG)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic")
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
 
 ## Get data from sce object:
 seurat_obj <- readRDS(file = "../label_transfer/allCells_integrated_label_transfer_UNIQUE_IDS.rds")
