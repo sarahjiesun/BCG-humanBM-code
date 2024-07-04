@@ -10,7 +10,7 @@ library(dplyr)
 library(ggrepel)
 
 ## Set directory structure
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/0.025_elastic_net_model/")
+setwd("/scATAC_analyses/2_main_analyses/elastic_net/")
 OUT_DIR <- "corr_plots_out/"
 dir.create(OUT_DIR)
 
@@ -29,7 +29,7 @@ plot_list <- list()
 for(j in 1:length(cluster_names)){
   
   
-  in_dir <- paste0("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/0.025_elastic_net_model/",cluster_names[j],"_EN_outputs/")
+  in_dir <- paste0("/scATAC_analyses/2_main_analyses/elastic_net/",cluster_names[j],"_EN_outputs/")
   
   model_dfs <- list()
   data_models_list <-list()
@@ -90,43 +90,6 @@ for(j in 1:length(cluster_names)){
       test <- cor.test(corr_df[,"real_value"], corr_df[,i], method = c("spearman"))
       correlation_results$R[i] = test$estimate
       correlation_results$P.value[i] = test$p.value
-      
-      # if(colnames(corr_df)=="a0.3")
-      # {
-      #   meta_data <- read.csv(file="../meta_data_limma_betas_interaction.csv")
-      #   treatment <- vector(length=length(row.names(corr_df)))
-      #   donor_name <- vector(length=length(row.names(corr_df)))
-      #   for(d in 1:length(row.names(corr_df)))
-      #   {
-      #     #GET BCG/CTL info for each donor 
-      #     treatment[d] <- as.character(unique(meta_data$group[which(meta_data$donor == row.names(corr_df)[d])]))
-      #     donor_name[d] <- as.character(unique(meta_data$donor[which(meta_data$donor == row.names(corr_df)[d])]))
-      #   }
-      #   df_scatter_individual <- data.frame(
-      #     real <- corr_df[,"real_value"],
-      #     pred <- corr_df[,i],
-      #     g <- treatment,
-      #     dn <- donor_name
-      #   )
-      #   
-      #   ann_text<-data.frame(
-      #     x = 0.9, y = 1.4,
-      #     label = paste0("Spearman corr = ",round(correlation_results$R[i],3),"\npvalue = ",round(correlation_results$P.value[i],4))
-      #   )
-      #   
-      #   p1 <- ggplot(df_scatter_individual, aes(x=real, y=pred)) + geom_point(shape=21, size=2, aes(fill=g)) + theme_classic()+
-      #     geom_smooth(method=lm, color="black", alpha=0.2, fullrange=TRUE, size=1) + labs(x='Real IL1B FC', y="Predicted IL1B FC")+
-      #     labs(fill="Group")
-      #   p2 <- ggplot(df_scatter_individual, aes(x=real, y=pred)) + geom_point(shape=21, size=3, fill="blue", alpha=0.7) + theme_classic()+
-      #     geom_smooth(method=lm, color="black", alpha=0.2, fullrange=TRUE, size=1) + labs(x='Real IL1B FC', y="Predicted IL1B FC")+
-      #     labs(fill="Group")+ geom_text(data=ann_text, aes(x=0.9, y=1.4, label=label))
-      #   
-      #   tiff(paste0(OUT_DIR, "ATAC_DApeaks_il1b_GMP3_a0.3_scatter_nocol.tiff"), units="in", width=3.5, height=3, res=250)
-      #   p2
-      #   dev.off()
-      #   
-      #   
-      # }
     }
     
     correlation_results$alpha <- colnames(corr_df[1:(ncol(corr_df)-1)])
