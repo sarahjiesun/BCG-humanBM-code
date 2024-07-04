@@ -1,12 +1,12 @@
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/")
-OUT_DIR <- "pyscenic/get_diff_regulons_outs/"
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
+OUT_DIR <- "get_diff_regulons_outs/"
 
 ## p < 0.15
 HSC_clusters <- c("HSC_a", "HSC_b")
 sig_regulons_hsc <- vector()
 for(i in 1:length(HSC_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",HSC_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",HSC_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_hsc <- append(dat$X[which(dat$pval_wilcox < 0.15)], sig_regulons_hsc)
 }
 sig_regulons_hsc <- unique(sig_regulons_hsc)
@@ -17,7 +17,7 @@ CMP_clusters <- c("CMP_a", "CMP_b", "CMP_c")
 sig_regulons_cmp <- vector()
 for(i in 1:length(CMP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",CMP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",CMP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_cmp <- append(dat$X[which(dat$pval_wilcox < 0.15)], sig_regulons_cmp)
 }
 sig_regulons_cmp <- unique(sig_regulons_cmp)
@@ -28,7 +28,7 @@ GMP_clusters <- c("GMP_a", "GMP_b")
 sig_regulons_gmp <- vector()
 for(i in 1:length(GMP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",GMP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",GMP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_gmp <- append(dat$X[which(dat$pval_wilcox <0.15)], sig_regulons_gmp)
 }
 sig_regulons_gmp <- unique(sig_regulons_gmp)
@@ -38,7 +38,7 @@ MEP_clusters <- c("MEP_a", "MEP_b", "MEP_c")
 sig_regulons_mep <- vector()
 for(i in 1:length(MEP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",MEP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",MEP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_mep <- append(dat$X[which(dat$pval_wilcox < 0.15)], sig_regulons_mep)
 }
 sig_regulons_mep <- unique(sig_regulons_mep)
@@ -49,13 +49,13 @@ MLP_clusters <- c("MLP_a", "MLP_b")
 sig_regulons_mlp <- vector()
 for(i in 1:length(MLP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",MLP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",MLP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_mlp <- append(dat$X[which(dat$pval_wilcox < 0.15)], sig_regulons_mlp)
 }
 sig_regulons_mlp <- unique(sig_regulons_mlp)
 
 
-dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/PreBNK_wilcox_data_no_outliers.csv"))
+dat <- read.csv(file=paste0("get_diff_regulons_outs/PreBNK_wilcox_data_no_outliers.csv"))
 sig_regulons_PreBNK <- dat$X[which(dat$pval_wilcox < 0.15)]
 
 
@@ -78,7 +78,7 @@ HSC_clusters <- c("HSC_a", "HSC_b")
 sig_regulons_hsc <- vector()
 for(i in 1:length(HSC_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",HSC_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",HSC_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_hsc <- append(dat$X[which(dat$pval_wilcox < 0.05)], sig_regulons_hsc)
 }
 sig_regulons_hsc <- unique(sig_regulons_hsc)
@@ -89,7 +89,7 @@ CMP_clusters <- c("CMP_a", "CMP_b", "CMP_c")
 sig_regulons_cmp <- vector()
 for(i in 1:length(CMP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",CMP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",CMP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_cmp <- append(dat$X[which(dat$pval_wilcox < 0.05)], sig_regulons_cmp)
 }
 sig_regulons_cmp <- unique(sig_regulons_cmp)
@@ -100,7 +100,7 @@ GMP_clusters <- c("GMP_a", "GMP_b")
 sig_regulons_gmp <- vector()
 for(i in 1:length(GMP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",GMP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",GMP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_gmp <- append(dat$X[which(dat$pval_wilcox < 0.05)], sig_regulons_gmp)
 }
 sig_regulons_gmp <- unique(sig_regulons_gmp)
@@ -110,7 +110,7 @@ MEP_clusters <- c("MEP_a", "MEP_b", "MEP_c")
 sig_regulons_mep <- vector()
 for(i in 1:length(MEP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",MEP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",MEP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_mep <- append(dat$X[which(dat$pval_wilcox < 0.05)], sig_regulons_mep)
 }
 sig_regulons_mep <- unique(sig_regulons_mep)
@@ -121,13 +121,13 @@ MLP_clusters <- c("MLP_a", "MLP_b")
 sig_regulons_mlp <- vector()
 for(i in 1:length(MLP_clusters))
 {
-  dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/",MLP_clusters[i],"_wilcox_data_no_outliers.csv"))
+  dat <- read.csv(file=paste0("get_diff_regulons_outs/",MLP_clusters[i],"_wilcox_data_no_outliers.csv"))
   sig_regulons_mlp <- append(dat$X[which(dat$pval_wilcox < 0.05)], sig_regulons_mlp)
 }
 sig_regulons_mlp <- unique(sig_regulons_mlp)
 
 
-dat <- read.csv(file=paste0("pyscenic/get_diff_regulons_outs/PreBNK_wilcox_data_no_outliers.csv"))
+dat <- read.csv(file=paste0("get_diff_regulons_outs/PreBNK_wilcox_data_no_outliers.csv"))
 sig_regulons_PreBNK <- dat$X[which(dat$pval_wilcox < 0.05)]
 
 
