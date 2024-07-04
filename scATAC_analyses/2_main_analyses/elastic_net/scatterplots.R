@@ -10,7 +10,7 @@ library(ggplot2)
 
 
 ## Set directory structure
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/0.025_elastic_net_model/")
+setwd("/scATAC_analyses/2_main_analyses/elastic_net/")
 OUT_DIR <- "scatterplots/"
 dir.create(OUT_DIR)
 
@@ -41,9 +41,6 @@ p_real <- ggplot(real_plot_df, aes(x=real_vals, y=pred_val)) + geom_point(shape 
   labs(title=paste0("Elastic net IL1B prediction"), x = "Real FC", y=  "Predicted FC") +
   geom_smooth(method=lm, color="grey") + ylim(0.6, 1.8) + theme_linedraw()+theme(axis.title.x=element_text(size=11))+theme(axis.title.y=element_text(size=11))
 
-# tiff(paste0(OUT_DIR,"CMP5_IL1B_a0.7_scatter_predicted.tiff"), units="in", width=3, height=3, res=250)
-# p_real
-# dev.off()
 
 final_file <- file.path(OUT_DIR,paste0("CMP5_IL1B_a0.7_scatter_predicted.pdf"))
 ggsave(filename = final_file, plot = p_real, height = 3, width = 3)
