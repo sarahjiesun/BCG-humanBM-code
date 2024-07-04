@@ -1,8 +1,8 @@
 library(ggplot2)
 library(stringr)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/")
-OUT_DIR <- "emmreml_downstream/HOMER_annotate/plot_homer_annotated_enriched_pathways_subgroups_combined/"
+setwd("/scATAC_analyses/2_main_analyses/emmreml_downstream/Homer_annotate")
+OUT_DIR <- "plot_homer_annotated_enriched_pathways_subgroups_combined/"
 dir.create(OUT_DIR)
 
 
@@ -14,7 +14,7 @@ p_final <- vector()
 clust_final <- vector()
 for(i in 1:length(clusters)){
   
-  results <- read.delim(file=paste0("emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/reactome.txt"), header=TRUE)
+  results <- read.delim(file=paste0("homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/reactome.txt"), header=TRUE)
   results$pval <- 10^(results$logP)
   results$q <- p.adjust(results$pval, method = "BH")
   results_sub1 <- subset(results, results$q < 0.05)
@@ -77,7 +77,7 @@ p_final <- vector()
 clust_final <- vector()
 for(i in 1:length(clusters)){
   
-  results <- read.delim(file=paste0("emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/reactome.txt"), header=TRUE)
+  results <- read.delim(file=paste0("homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/reactome.txt"), header=TRUE)
   results$pval <- 10^(results$logP)
   results$q <- p.adjust(results$pval, method = "BH")
   results_sub1 <- subset(results, results$q < 0.05)
@@ -140,7 +140,7 @@ p_final <- vector()
 clust_final <- vector()
 for(i in 1:length(clusters)){
   
-  results <- read.delim(file=paste0("emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/biological_process.txt"), header=TRUE)
+  results <- read.delim(file=paste0("homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/biological_process.txt"), header=TRUE)
   results$pval <- 10^(results$logP)
   results$q <- p.adjust(results$pval, method = "BH")
   results_sub1 <- subset(results, results$q < 0.05)
@@ -252,7 +252,7 @@ clust_final <- vector()
 
 for(i in 1:length(clusters)){
   
-  results <- read.delim(file=paste0("emmreml_downstream/HOMER_annotate/homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/biological_process.txt"), header=TRUE)
+  results <- read.delim(file=paste0("homer_annotate_subgroups_combined_output/",clusters[i],"_homer_annotate_GO/biological_process.txt"), header=TRUE)
   results$pval <- 10^(results$logP)
   results$q <- p.adjust(results$pval, method = "BH")
   results_sub1 <- subset(results, results$q < 0.05)
