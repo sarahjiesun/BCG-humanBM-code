@@ -16,7 +16,7 @@ library(SCopeLoomR)
 library(doRNG)
 library(ggrepel)
 
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic")
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
 OUT_DIR <- "regulon_cytokine_correlations/"
 dir.create(OUT_DIR)
 
@@ -27,7 +27,7 @@ DefaultAssay(seurat_obj) <- "RNA"
 
 
 
-#Analysis excluding S2, S3, S12
+#Analysis excluding S2, S3, S12 (filtered out due DR gene analysis due to fewer than 20 cells)
 auc_mat <- read.csv(file=paste0("scenic_cluster_HSc_a_auc_mtx.csv"))
 df <- seurat_obj@meta.data
 samples <- unique(df$UNIQUE_ID)
@@ -159,9 +159,7 @@ for(i in 1:length(colnames(logfc_mat_final))){
       labs(x = paste0(colnames(logfc_mat_final)[i]," score"), y ="FC IL1B by PBMCs", title= paste0(colnames(logfc_mat_final)[i]," score vs. IL1B")) +
       scale_fill_manual(values=c("#42B540", "grey"))
     plot_list1[[i]] <- p1
-    
-    ## other colors
-    #"#F1788D", "#00A2B3"
+
     
     # ## i == 25
     # if(colnames(logfc_mat_final)[i] == "KLF5"){
@@ -326,76 +324,3 @@ dev.off()
 wilcox.test(df_comparison$val[which(df_comparison$g == "IL1B")], df_comparison$val[which(df_comparison$g == "IL6")])
 
 
-#Rho values of regulons enriched in CMPs and GMPs versus rho values of those that are not
-cmp_enrichment_data <- read.csv(file=paste0("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis1_Clusters_harmony/emmreml_Jedited_downstream/hint_motif_enrich_results/CMP_hint_enrich_fdr_vals.csv"))
-gmp_enrichment_data <- read.csv(file=paste0("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis1_Clusters_harmony/emmreml_Jedited_downstream/hint_motif_enrich_results/GMP_hint_enrich_fdr_vals.csv"))
-
-cmp_sig <- cmp_enrichment_data$TF[which(cmp_enrichment_data$fdr < 0.000005)]
-gmp_sig <- gmp_enrichment_data$TF[which(gmp_enrichment_data$fdr < 0.000005)]
-
-enriched_groups_all <- unique(c(cmp_sig, gmp_sig))
-
-TF_info <- data.frame(read.csv(file=paste0("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis1_Clusters_harmony/scHINT_subtypes_combined/interaction_model/TF_cluster_information.csv"), header=TRUE))
-TF_info_copy <- TF_info
-str_sub(TF_info_copy$TF.motif, start = 1, end = 9, omit_na = FALSE) <- ""
-TF_matched_group <- vector()
-count <- 1
-regulon <- vector()
-regulon_group <- vector()
-regulon_rho_il6 <- vector()
-regulon_rho_il1b <- vector()
-regulon_p_il6 <- vector()
-regulon_p_il1b <- vector()
-for(j in 1:length(colnames(logfc_mat_final)))
-{
-  if(colnames(logfc_mat_final)[j] %in% TF_info_copy$TF.motif)
-  {
-    TF_matched_group[count] <- unique(TF_info_copy$clusters[which(TF_info_copy$TF.motif == colnames(logfc_mat_final)[j] )])
-    regulon[count] <- colnames(logfc_mat_final)[j]
-    regulon_rho_il6[count] <- rho_il6[j]
-    regulon_rho_il1b[count] <- rho_il1b[j]
-    regulon_p_il6[count] <- pval_il6[j]
-    regulon_p_il1b[count] <- pval_il1b[j]
-    if(TF_matched_group[count] %in% enriched_groups_all)
-    {
-      regulon_group[count] <- "enriched"
-    }
-    else
-    {
-      regulon_group[count] <- "not_enriched"
-    }
-    count <- count + 1
-  }
-}
-
-
-df_il1b <- data.frame(
-  g <- regulon_group,
-  rho <- abs(as.numeric(regulon_rho_il1b))
-)
-colnames(df_il1b) <- c("g", "rho")
-
-ggplot(df_il1b, aes(x=g, y=rho, fill=g)) + 
-  geom_violin(trim=FALSE)  + geom_jitter(shape=16,size=2, position=position_jitter(0.2)) + theme_classic() + labs(x="",y="Rho") + scale_fill_manual(values=c("#F1788D","#00A2B3"))+
-  theme(legend.position="none")
-
-
-df_il6 <- data.frame(
-  g <- regulon_group,
-  rho <- abs(as.numeric(regulon_rho_il6))
-)
-colnames(df_il6) <- c("g", "rho")
-
-ggplot(df_il6, aes(x=g, y=rho)) + 
-  geom_violin(trim=FALSE)  + geom_jitter(shape=16, position=position_jitter(0.2)) + theme_classic()
-
-
-df_il1b_p <- data.frame(
-  g <- regulon_group,
-  p <- -log10(as.numeric(regulon_p_il1b))
-)
-colnames(df_il1b_p) <- c("g", "p")
-
-ggplot(df_il1b_p, aes(x=g, y=p, fill=g)) + 
-  geom_violin(trim=FALSE)  + geom_jitter(shape=16,size=2, position=position_jitter(0.2)) + theme_classic() + labs(x="",y="-log10(p)") + scale_fill_manual(values=c("#F1788D","#00A2B3"))+
-  theme(legend.position="none")
