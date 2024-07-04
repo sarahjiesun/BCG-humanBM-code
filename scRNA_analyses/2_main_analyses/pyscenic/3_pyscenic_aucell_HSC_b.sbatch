@@ -11,7 +11,7 @@
 module load java
 module load singularity
 
-INPUT_DIR=/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic
+INPUT_DIR=/scRNA_analyses/2_main_analyses/pyscenic
 
 
 
