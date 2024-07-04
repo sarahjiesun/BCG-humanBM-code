@@ -13,7 +13,7 @@ data <- "ATAC"
 
 
 ## Set directory structure
-setwd("/project/lbarreiro/USERS/sarah/HUMAN_BM_PROJECT/BM_CD34_scATAC/Rprojects/ArchR/analysis_FINAL_ALTERNATE/0.025_elastic_net_model/")
+setwd("/scATAC_analyses/2_main_analyses/elastic_net/")
 
 cluster_names <- c("CMP1", "CMP2", "PreBNK", "GMP1", "CMP3",  "CMP4", "CMP5",  "GMP3", "GMP2")
 
@@ -31,7 +31,7 @@ for(j in 1:length(cluster_names)){
   weights_out = file.path(paste0(out_dir,"weights"))
   
   #Load in ATAC meta data
-  meta_data <- read.csv(file="../../analysis_FINAL_Clusters_harmony/meta_data_limma_betas_interaction.csv")
+  meta_data <- read.csv(file="../meta_data_limma_betas_interaction.csv")
   
   #Load in a table of RNA or ATAC logFC values for each gene/peak (columns are donors, rows are genes/peaks)
   logfc_mat_final_list <- readRDS(file=paste0("../emmreml_downstream/DApeaks_cytokines_correlation/0.05_logfc_mat_final_list_DR_only.rds"))
@@ -41,7 +41,7 @@ for(j in 1:length(cluster_names)){
   colnames(cts) <- paste0(colnames(cts))
   
   #Load in cytokine data and format
-  cytokine_data <- data.frame(fread("../../analysis1_Clusters_harmony/PBMC_cytokine_data_CHM.txt"))
+  cytokine_data <- data.frame(fread("../PBMC_cytokine_data_CHM.txt"))
   cyt_subset1 <- subset(cytokine_data, as.character(cytokine_data$Donor) %in% colnames(cts))
   cyt_subset2 <- subset(cyt_subset1, as.character(cyt_subset1$Timepoint) == "D90")
   #final cytokine scores
