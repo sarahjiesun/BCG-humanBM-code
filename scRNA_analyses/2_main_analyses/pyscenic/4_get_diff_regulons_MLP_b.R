@@ -16,7 +16,7 @@ library(SCopeLoomR)
 library(doRNG)
 library(ggrepel)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic")
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
 OUT_DIR <- "get_diff_regulons_outs/"
 dir.create(OUT_DIR)
 
