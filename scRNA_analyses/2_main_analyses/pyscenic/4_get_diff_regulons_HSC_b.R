@@ -16,7 +16,7 @@ library(SCopeLoomR)
 library(doRNG)
 library(ggrepel)
 
-setwd("/project2/lbarreiro/users/Sarah/HUMAN_BM_PROJECT/BM_CD34_scRNA/Rprojects/projects_version2_Rv4.1/Analysis12_label_transfer_emmreml_edited/pyscenic")
+setwd("/scRNA_analyses/2_main_analyses/pyscenic")
 OUT_DIR <- "get_diff_regulons_outs/"
 dir.create(OUT_DIR)
 
@@ -111,9 +111,7 @@ row.names(logfc_mat) <- substr(row.names(logfc_mat),1,nchar(row.names(logfc_mat)
 #To make all plots with p < 0.06
 pval <- vector(length=length(row.names(logfc_mat)))
 pval_wilcox <- vector(length=length(row.names(logfc_mat)))
-plot_list <- list()
 tf_name <- vector()
-plot_count <- 1
 for(i in 1:length(row.names(logfc_mat)))
 {
   values <- logfc_mat[i, ]
@@ -127,32 +125,6 @@ for(i in 1:length(row.names(logfc_mat)))
   
   res_wilcox <- wilcox.test(BCG_vals, CTL_vals)
   pval_wilcox[i] <- res_wilcox$p.value
-  
-  if(pval[i] < 0.06)
-  {
-    donors <- c(names(values)[which(names(values) %in% BCG_donors)], names(values)[which(names(values) %in% CTL_donors)])
-    lab <- rep("no",length(donors))
-    lab[which(!(donors %in% c("S8", "S10", "S12", "S14", "S16")))] <- "yes"
-    
-    df_plot <- data.frame(
-      vals <- c(BCG_vals, CTL_vals),
-      group <- c(rep("BCG", length(BCG_vals)), rep("CTL", length(CTL_vals))),
-      d <- donors,
-      l <- lab
-    )
-    colnames(df_plot) <- c("vals", "group", "d", "l")
-    
-    
-    p <- ggplot(data=df_plot, aes(x=group, y=vals, fill=group, label=d)) + geom_boxplot(aes(fill=group), alpha=0.5)  + geom_jitter(shape=21, size=3, stroke=1, alpha=1, position=position_jitter(0.2), aes(fill=group, color=l))+ theme_light()+
-      labs(x="", y="Regulon Activity change (Tm3-Td0)", fill="Group", title=paste0(row.names(logfc_mat)[i]," Regulon in HSCb: pval = ", round(pval[i], digits=2))) + scale_fill_manual(values=c("#FF950E","#4B1F6F")) +
-      geom_text_repel(size=2) + theme(plot.title=element_text(size=7)) + scale_color_manual(values=c( "#83CAFF", "black"))
-    
-    
-    plot_list[[plot_count]] <- p
-    tf_name[plot_count] <- row.names(logfc_mat)[i]
-    plot_count <- plot_count + 1
-    
-  
   }
   
 }
@@ -161,13 +133,3 @@ wilcox_data <- data.frame(cbind(pval_wilcox, padj_wilcox))
 row.names(wilcox_data) <- row.names(logfc_mat)
 write.csv(wilcox_data, file=paste0(OUT_DIR, "HSC_b_wilcox_data_no_outliers.csv")) ##RENAME HSC c2
 
-
-for(k in 1:length(plot_list)) 
-{
-  file_name = paste0(OUT_DIR, tf_name[k], "_regulon_HSC_b_S2_S3_S12_excluded.tiff")
-  tiff(file_name, units="in", width=3.5, height=3, res=250)
-  print(plot_list[[k]])
-  dev.off()
-  print(k)
-  
-}
